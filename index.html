@@ -626,21 +626,6 @@ function applySheetPagePosition(){
 window.addEventListener('resize', applySheetPagePosition);
 window.addEventListener('orientationchange', ()=> setTimeout(applySheetPagePosition, 60));
 
-// The stats page scrolling must never drag the drum with it.
-(function watchPageScroll(){
-  document.addEventListener('DOMContentLoaded', ()=>{
-    document.querySelectorAll('.sheet-page').forEach(pg=>{
-      let t;
-      pg.addEventListener('scroll', ()=>{
-        if(wheelActive) return;      // the drum owns the gesture
-        pageIsScrolling = true;
-        clearTimeout(t);
-        t = setTimeout(()=>{ pageIsScrolling = false; }, 220);
-      }, {passive:true});
-    });
-  });
-})();
-
 function goToSheetPage(n){
   state.sheetPage = n;
   applySheetPagePosition();
@@ -753,9 +738,6 @@ pctRing.addEventListener('touchmove', e=>{ if(dragging) e.preventDefault(); }, {
    TIME WHEELS
 --------------------------------------------------------- */
 const ITEM_H = 56; // must match .wheel-item height in CSS
-let wheelActive = false;      // a finger is on the drum
-let pageIsScrolling = false;  // the page itself is moving
-let lockedTop = 0;            // drum position to hold while the page moves
 
 function buildWheel(el, max, initial, onChange){
   el.innerHTML = '<div class="wheel-pad"></div>';
@@ -768,7 +750,6 @@ function buildWheel(el, max, initial, onChange){
   }
   el.insertAdjacentHTML('beforeend','<div class="wheel-pad"></div>');
   el.scrollTop = initial*ITEM_H;
-  lockedTop = initial*ITEM_H;
   requestAnimationFrame(()=>{ el.scrollTop = initial*ITEM_H; });
   let t;
   function updateMid(){
@@ -781,33 +762,26 @@ function buildWheel(el, max, initial, onChange){
     });
   }
   el.addEventListener('scroll', ()=>{
-    if(pageIsScrolling){            // ignore movement dragged in by the page
-      el.scrollTop = lockedTop;
-      return;
-    }
     updateMid();
     clearTimeout(t);
     t = setTimeout(()=>{
       const idx = Math.max(0, Math.min(max, Math.round(el.scrollTop/ITEM_H)));
       el.scrollTo({top: idx*ITEM_H, behavior:'smooth'});
-      lockedTop = idx*ITEM_H;
       onChange(idx);
     }, 140);
   });
 
-  // while a finger is on the drum, freeze the page underneath it
+  // While a finger is on the drum the page underneath is frozen, so the
+  // gesture belongs to the drum alone. Nothing else interferes with it.
   const page = el.closest('.sheet-page');
-  el.addEventListener('touchstart', ()=>{
-    wheelActive = true;
-    if(page) page.style.overflowY = 'hidden';
-  }, {passive:true});
-  const release = ()=>{
-    wheelActive = false;
-    if(page) page.style.overflowY = '';
-    lockedTop = el.scrollTop;
-  };
-  el.addEventListener('touchend', release);
-  el.addEventListener('touchcancel', release);
+  const lock   = ()=>{ if(page) page.style.overflowY = 'hidden'; };
+  const unlock = ()=>{ if(page) page.style.overflowY = ''; };
+  el.addEventListener('touchstart',  lock,   {passive:true});
+  el.addEventListener('pointerdown', lock,   {passive:true});
+  ['touchend','touchcancel','pointerup','pointercancel'].forEach(ev=>
+    el.addEventListener(ev, unlock, {passive:true}));
+  // safety net: never leave the page locked
+  window.addEventListener('blur', unlock);
   updateMid();
 }
 // the wheel is rebuilt per adventure: each one has its own standard length
