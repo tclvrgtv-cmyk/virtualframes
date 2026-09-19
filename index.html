@@ -132,16 +132,32 @@
   .sheet.open{ transform: translateX(0); visibility:visible; }
   /* leaving: the page eases down and back rather than just sliding off */
   .sheet.closing{
-    transform: translateY(6%) scale(0.94);
-    opacity:0; visibility:visible;
-    transition: transform .34s cubic-bezier(.4,0,1,1), opacity .30s ease-in;
+    transform: translateY(9%) scale(0.90);
+    opacity:0; visibility:visible; filter: blur(3px);
+    transition: transform .40s cubic-bezier(.36,0,.66,-0.20),
+                opacity .32s ease-in, filter .32s ease-in;
   }
   #rootContent{ transition: transform .42s var(--spring), opacity .42s ease; }
-  #rootContent.returning{ animation: homeBack .46s var(--spring); }
+  #rootContent.returning{ animation: homeBack .50s var(--spring); }
   @keyframes homeBack{
-    from{ transform: scale(1.04); opacity:.4; }
-    to  { transform: scale(1);    opacity:1; }
+    from{ transform: scale(1.06) translateY(-8px); opacity:.25; filter:blur(4px); }
+    60% { filter:blur(0); }
+    to  { transform: scale(1) translateY(0);       opacity:1;   filter:blur(0); }
   }
+  /* the rows settle back one after another */
+  #rootContent.returning .advcard{ animation: rowBack .42s var(--spring) backwards; }
+  #rootContent.returning .advcard:nth-child(1){ animation-delay:.02s }
+  #rootContent.returning .advcard:nth-child(2){ animation-delay:.05s }
+  #rootContent.returning .advcard:nth-child(3){ animation-delay:.08s }
+  #rootContent.returning .advcard:nth-child(4){ animation-delay:.11s }
+  #rootContent.returning .advcard:nth-child(5){ animation-delay:.14s }
+  #rootContent.returning .advcard:nth-child(6){ animation-delay:.17s }
+  #rootContent.returning .advcard:nth-child(7){ animation-delay:.20s }
+  @keyframes rowBack{
+    from{ opacity:0; transform: translateY(14px); }
+    to  { opacity:1; transform: translateY(0); }
+  }
+  #rootContent.returning .large-title{ animation: rowBack .44s var(--spring) backwards; }
   .advcard.launching{ animation: cardPulse .42s var(--spring); }
   @keyframes cardPulse{
     0%{ background: rgba(255,255,255,0.10); }
@@ -234,12 +250,13 @@
   .wheels::before, .wheels::after{ content:''; position:absolute; left:0; right:0; height:84px; pointer-events:none; z-index:2; }
   .wheels::before{ top:0; background:linear-gradient(to bottom, #1b1b1f 14%, rgba(27,27,31,0.72) 58%, rgba(27,27,31,0)); }
   .wheels::after{ bottom:0; background:linear-gradient(to top, #1b1b1f 14%, rgba(27,27,31,0.72) 58%, rgba(27,27,31,0)); }
-  .wheel{ height:224px; width:190px; overflow-y:scroll; scroll-snap-type:y mandatory; -ms-overflow-style:none; scrollbar-width:none;
-    -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain; touch-action:pan-y; }
+  .wheel{ height:224px; width:190px; overflow:hidden; position:relative;
+    touch-action:none; cursor:grab; -webkit-user-select:none; user-select:none; }
+  .wheel:active{ cursor:grabbing; }
+  .wheel-track{ will-change:transform; }
   .wheel::-webkit-scrollbar{ display:none; }
-  .wheel-pad{ height:84px; }
   .wheel-item{ height:56px; display:flex; align-items:center; justify-content:center; font-size:30px; font-weight:600;
-    color:rgba(245,245,247,0.34); scroll-snap-align:center; font-variant-numeric:tabular-nums;
+    color:rgba(245,245,247,0.34); font-variant-numeric:tabular-nums;
     transition:color .18s, font-size .18s, font-weight .18s; touch-action:manipulation; cursor:pointer; }
   .wheel-item.near{ color:rgba(245,245,247,0.60); }
   .wheel-item.mid{ color:var(--text); font-size:44px; font-weight:700; }
@@ -369,7 +386,10 @@
           <svg class="picon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z" /> <circle cx="12" cy="13" r="3" /></svg>
           <div class="hint">Tocca per scegliere la foto</div>
         </div>
-        <input type="file" accept="image/png,image/jpeg,image/heic,image/*" id="fileInput" style="display:none" multiple="false">
+        <!-- Library only: no capture attribute (that would offer the camera) and
+     the accept list is limited to picture formats, so documents are out. -->
+      <input type="file" id="fileInput" style="display:none"
+             accept="image/jpeg,image/png,image/heic,image/heif,image/webp">
       </div>
 
       <!-- PAGE 2: result -->
@@ -601,7 +621,7 @@ function closeSheet(){
   setTimeout(()=>{
     sheet.classList.remove('closing');
     rootContent.classList.remove('returning');
-  }, 460);
+  }, 520);
   sheet.classList.remove('open');
   setTimeout(()=>{
     // reset for next open
@@ -739,50 +759,117 @@ pctRing.addEventListener('touchmove', e=>{ if(dragging) e.preventDefault(); }, {
 --------------------------------------------------------- */
 const ITEM_H = 56; // must match .wheel-item height in CSS
 
+/* The drum is driven by pointer events rather than native overflow
+   scrolling. Toggling the page's overflow mid-gesture cancels iOS's
+   momentum scroll, which is what made it feel stuck — with a custom
+   drag the wheel follows the finger exactly and, because the element
+   declares touch-action:none, the page underneath never moves. */
 function buildWheel(el, max, initial, onChange){
-  el.innerHTML = '<div class="wheel-pad"></div>';
+  el.innerHTML = '';
+  const track = document.createElement('div');
+  track.className = 'wheel-track';
   for(let i=0;i<=max;i++){
     const it = document.createElement('div');
-    it.className='wheel-item';
+    it.className = 'wheel-item';
     it.textContent = String(i).padStart(2,'0');
-    it.addEventListener('click', ()=> el.scrollTo({top: i*ITEM_H, behavior:'smooth'}));
-    el.appendChild(it);
+    track.appendChild(it);
   }
-  el.insertAdjacentHTML('beforeend','<div class="wheel-pad"></div>');
-  el.scrollTop = initial*ITEM_H;
-  requestAnimationFrame(()=>{ el.scrollTop = initial*ITEM_H; });
-  let t;
-  function updateMid(){
-    const idx = Math.round(el.scrollTop/ITEM_H);
-    const items = el.querySelectorAll('.wheel-item');
-    items.forEach((c,i)=>{
+  el.appendChild(track);
+
+  const MIDY = (el.clientHeight || 224)/2 - ITEM_H/2;
+  let index = initial;
+  let offset = -initial*ITEM_H;        // px, negative = scrolled down the list
+  let dragging = false, moved = false;
+  let startY = 0, startOffset = 0, lastY = 0, lastT = 0, vel = 0, raf = null;
+
+  const limitLo = -max*ITEM_H, limitHi = 0;
+
+  function paint(){
+    track.style.transform = `translate3d(0, ${offset + MIDY}px, 0)`;
+    const idx = Math.round(-offset/ITEM_H);
+    [...track.children].forEach((c,i)=>{
       const d = Math.abs(i - idx);
-      c.classList.toggle('mid', d===0);
+      c.classList.toggle('mid',  d===0);
       c.classList.toggle('near', d===1);
     });
   }
-  el.addEventListener('scroll', ()=>{
-    updateMid();
-    clearTimeout(t);
-    t = setTimeout(()=>{
-      const idx = Math.max(0, Math.min(max, Math.round(el.scrollTop/ITEM_H)));
-      el.scrollTo({top: idx*ITEM_H, behavior:'smooth'});
-      onChange(idx);
-    }, 140);
+
+  function commit(){
+    const idx = Math.max(0, Math.min(max, Math.round(-offset/ITEM_H)));
+    if(idx !== index){ index = idx; onChange(idx); }
+  }
+
+  // eased settle onto the nearest value
+  function glideTo(idx, ms=260){
+    idx = Math.max(0, Math.min(max, idx));
+    const from = offset, to = -idx*ITEM_H, t0 = performance.now();
+    cancelAnimationFrame(raf);
+    (function step(now){
+      const k = Math.min(1, (now-t0)/ms);
+      const e = 1 - Math.pow(1-k, 3);          // ease-out cubic
+      offset = from + (to-from)*e;
+      paint();
+      if(k < 1) raf = requestAnimationFrame(step);
+      else { offset = to; paint(); commit(); }
+    })(performance.now());
+  }
+
+  // flick momentum, then snap
+  function release(){
+    const decel = 0.0022;                       // px per ms^2
+    let v = vel;
+    if(Math.abs(v) < 0.08){ glideTo(Math.round(-offset/ITEM_H)); return; }
+    const dir = Math.sign(v);
+    const dist = (v*v)/(2*decel) * dir;
+    let target = Math.round(-(offset + dist)/ITEM_H);
+    target = Math.max(0, Math.min(max, target));
+    const travel = Math.abs(target*ITEM_H + offset);
+    glideTo(target, Math.min(760, 220 + travel*0.9));
+  }
+
+  el.addEventListener('pointerdown', e=>{
+    dragging = true; moved = false;
+    cancelAnimationFrame(raf);
+    startY = lastY = e.clientY; startOffset = offset;
+    lastT = performance.now(); vel = 0;
+    try{ el.setPointerCapture(e.pointerId); }catch(err){}
   });
 
-  // While a finger is on the drum the page underneath is frozen, so the
-  // gesture belongs to the drum alone. Nothing else interferes with it.
-  const page = el.closest('.sheet-page');
-  const lock   = ()=>{ if(page) page.style.overflowY = 'hidden'; };
-  const unlock = ()=>{ if(page) page.style.overflowY = ''; };
-  el.addEventListener('touchstart',  lock,   {passive:true});
-  el.addEventListener('pointerdown', lock,   {passive:true});
-  ['touchend','touchcancel','pointerup','pointercancel'].forEach(ev=>
-    el.addEventListener(ev, unlock, {passive:true}));
-  // safety net: never leave the page locked
-  window.addEventListener('blur', unlock);
-  updateMid();
+  el.addEventListener('pointermove', e=>{
+    if(!dragging) return;
+    e.preventDefault();                          // the page must not follow
+    const dy = e.clientY - startY;
+    if(Math.abs(dy) > 4) moved = true;
+    let next = startOffset + dy;
+    // rubber-band past the ends instead of stopping dead
+    if(next > limitHi) next = limitHi + (next-limitHi)*0.32;
+    if(next < limitLo) next = limitLo + (next-limitLo)*0.32;
+    offset = next;
+    const now = performance.now(), dt = now - lastT;
+    if(dt > 0){ vel = (e.clientY - lastY)/dt; lastT = now; lastY = e.clientY; }
+    paint();
+  });
+
+  // A tap selects the value under the finger. Handled here because the
+  // pointer capture above retargets click events away from the items.
+  function pickAt(clientY){
+    const rect = el.getBoundingClientRect();
+    const posInTrack = (clientY - rect.top) - (offset + MIDY);
+    glideTo(Math.floor(posInTrack / ITEM_H));
+  }
+
+  const end = (e)=>{
+    if(!dragging) return;
+    dragging = false;
+    try{ el.releasePointerCapture(e.pointerId); }catch(err){}
+    if(moved) release();
+    else pickAt(e.clientY);
+  };
+  el.addEventListener('pointerup', end);
+  el.addEventListener('pointercancel', e=>{ if(dragging){ dragging=false; release(); } });
+  el.addEventListener('touchmove', e=>{ if(dragging) e.preventDefault(); }, {passive:false});
+
+  paint();
 }
 // the wheel is rebuilt per adventure: each one has its own standard length
 const OVERTIME = 15;                      // slack past the standard length
