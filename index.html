@@ -182,9 +182,9 @@
   .sheet-page{ width:33.3334%; height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain; padding: 14px 22px 20px; }
   .sheet-page::-webkit-scrollbar{ display:none; }
 
-  .sheet-footer{ padding: 12px 20px calc(14px + var(--sab)); flex-shrink:0; background:#0d0d0f; border-top:1px solid rgba(255,255,255,0.05); }
+  .sheet-footer{ padding: 10px 20px calc(12px + var(--sab)); flex-shrink:0; background:#0d0d0f; border-top:1px solid rgba(255,255,255,0.05); }
 
-  h2.page-title{ font-size:21px; font-weight:800; margin:2px 0 12px; letter-spacing:-.2px; text-align:center; }
+  h2.page-title{ font-size:20px; font-weight:800; margin:0 0 8px; letter-spacing:-.2px; text-align:center; }
   p.page-sub{ color:var(--text-dim); font-size:13.5px; margin:0 0 16px; line-height:1.4; }
 
   /* ---------- buttons ---------- */
@@ -198,8 +198,30 @@
   .btn.ghost{ background:var(--glass); color:var(--text); border:1px solid var(--glass-brd); }
   .btn[disabled]{ opacity:.32; pointer-events:none; }
   .btn.small{ padding:12px 18px; font-size:14px; }
+  .cta-row{ display:flex; align-items:stretch; gap:10px; }
+  .cta-row .btn{ flex:1; }
+  .photo-chip{ flex:0 0 auto; width:56px; padding:0; border-radius:16px; cursor:pointer;
+    background:var(--glass); border:1px solid var(--glass-brd); overflow:hidden;
+    touch-action:manipulation; transition: transform .16s var(--spring); }
+  .photo-chip:active{ transform:scale(.94); }
+  .photo-chip img{ width:100%; height:100%; object-fit:cover; display:block; }
   .row2{ display:flex; gap:10px; }
   .row2 .btn{ flex:1; }
+
+  /* short phones: shave the two tallest blocks so nothing scrolls */
+  @media (max-height: 740px){
+    .pct-ring{ width:min(40vw, 146px); }
+    .pct-num .n{ font-size:31px; }
+    .pct-num .l{ font-size:9.5px; }
+    .pct-wrap{ margin: 10px 0 8px; }
+    .wheels{ height:120px; }
+    .wheels::before, .wheels::after{ height:36px; }
+    .wheel{ height:120px; }
+    .wheel-highlight{ top:36px; }
+    h2.page-title{ font-size:18px; margin:0 0 6px; }
+    .field{ min-height:44px; padding:11px 14px; font-size:16px; }
+    .photo-chip img{ width:32px; height:32px; }
+  }
 
   /* ---------- solved / unsolved choice (Crime Room) ---------- */
   .solved-wrap{ display:none; flex-direction:column; align-items:center; margin: 18px 0 22px; }
@@ -218,8 +240,8 @@
   .solved-btn.no.on{  border-color:#CE2029; color:#FF6B72; background:rgba(206,32,41,0.12); border-style:solid; }
 
   /* ---------- percentage ring ---------- */
-  .pct-wrap{ display:flex; flex-direction:column; align-items:center; margin: 30px 0 16px; position:relative; z-index:2; }
-  .pct-ring{ position:relative; width:min(52vw, 196px); aspect-ratio:1; touch-action:none; margin: 0 auto; overflow:visible; z-index:3; }
+  .pct-wrap{ display:flex; flex-direction:column; align-items:center; margin: 16px 0 12px; position:relative; z-index:2; }
+  .pct-ring{ position:relative; width:min(46vw, 172px); aspect-ratio:1; touch-action:none; margin: 0 auto; overflow:visible; z-index:3; }
   .pct-knob{ transition: none; filter: drop-shadow(0 2px 6px rgba(0,0,0,.55)); }
   #pctArc{ stroke: var(--tint, var(--accent)); }
   #pctKnobDot{ fill: var(--tint, var(--accent)); }
@@ -227,14 +249,14 @@
   .pct-hint{ font-size:11px; color:var(--text-dim); margin-top:10px; text-align:center; letter-spacing:.2px; }
   .pct-ring svg.ring-svg{ width:100%; height:100%; transform:rotate(135deg); }
   .pct-num{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-  .pct-num .n{ font-size:40px; font-weight:800; letter-spacing:-1px; font-variant-numeric:tabular-nums; }
+  .pct-num .n{ font-size:36px; font-weight:800; letter-spacing:-1px; font-variant-numeric:tabular-nums; }
   .pct-num .l{ font-size:10.5px; color:var(--text-dim); text-transform:uppercase; letter-spacing:1.2px; margin-top:2px;}
 
   /* themed text field */
-  .field-wrap{ margin: 2px 0 6px; position:relative; z-index:1; }
-  .field-label{ display:block; font-size:11.5px; text-transform:uppercase; letter-spacing:1.1px; color:var(--text-dim); font-weight:700; margin:0 0 8px; text-align:center; }
+  .field-wrap{ margin: 0 0 4px; position:relative; z-index:1; }
+  .field-label{ display:block; font-size:11px; text-transform:uppercase; letter-spacing:1.1px; color:var(--text-dim); font-weight:700; margin:0 0 8px; text-align:center; }
   .field{
-    width:100%; text-align:center; background:#1b1b1f; border:1.5px solid var(--glass-brd); border-radius:14px;
+    width:100%; text-align:center; padding:12px 16px; min-height:46px; background:#1b1b1f; border:1.5px solid var(--glass-brd); border-radius:14px;
     padding:15px 16px; font-size:17px; font-weight:600; color:var(--text); font-family:inherit;
     outline:none; min-height:52px; -webkit-appearance:none;
     transition: border-color .2s, box-shadow .2s;
@@ -242,26 +264,26 @@
   .field::placeholder{ color:rgba(245,245,247,0.28); font-weight:500; }
   .field:focus{ border-color: var(--tint, var(--accent)); }
 
-  .card{ background:#1b1b1f; border:1px solid var(--glass-brd); border-radius:20px; padding:16px 12px 14px; }
-  .card-label{ font-size:11.5px; text-transform:uppercase; letter-spacing:1.1px; color:var(--text-dim); font-weight:700; margin-bottom:10px; text-align:center; }
+  .card{ background:#1b1b1f; border:1px solid var(--glass-brd); border-radius:18px; padding:12px 12px 10px; }
+  .card-label{ font-size:11px; text-transform:uppercase; letter-spacing:1.1px; color:var(--text-dim); font-weight:700; margin-bottom:6px; text-align:center; }
 
   /* ---------- time wheels ---------- */
-  .wheels{ display:flex; align-items:center; justify-content:center; height:224px; position:relative; }
-  .wheels::before, .wheels::after{ content:''; position:absolute; left:0; right:0; height:84px; pointer-events:none; z-index:2; }
+  .wheels{ display:flex; align-items:center; justify-content:center; height:144px; position:relative; }
+  .wheels::before, .wheels::after{ content:''; position:absolute; left:0; right:0; height:48px; pointer-events:none; z-index:2; }
   .wheels::before{ top:0; background:linear-gradient(to bottom, #1b1b1f 14%, rgba(27,27,31,0.72) 58%, rgba(27,27,31,0)); }
   .wheels::after{ bottom:0; background:linear-gradient(to top, #1b1b1f 14%, rgba(27,27,31,0.72) 58%, rgba(27,27,31,0)); }
-  .wheel{ height:224px; width:190px; overflow:hidden; position:relative;
+  .wheel{ height:144px; width:190px; overflow:hidden; position:relative;
     touch-action:none; cursor:grab; -webkit-user-select:none; user-select:none; }
   .wheel:active{ cursor:grabbing; }
   .wheel-track{ will-change:transform; }
   .wheel::-webkit-scrollbar{ display:none; }
-  .wheel-item{ height:56px; display:flex; align-items:center; justify-content:center; font-size:30px; font-weight:600;
+  .wheel-item{ height:48px; display:flex; align-items:center; justify-content:center; font-size:26px; font-weight:600;
     color:rgba(245,245,247,0.34); font-variant-numeric:tabular-nums;
     transition:color .18s, font-size .18s, font-weight .18s; touch-action:manipulation; cursor:pointer; }
   .wheel-item.near{ color:rgba(245,245,247,0.60); }
-  .wheel-item.mid{ color:var(--text); font-size:44px; font-weight:700; }
+  .wheel-item.mid{ color:var(--text); font-size:38px; font-weight:700; }
   .wheel-col{ position:relative; display:flex; flex-direction:column; align-items:center; z-index:1; }
-  .wheel-highlight{ position:absolute; top:84px; height:56px; left:50%; transform:translateX(-50%); width:200px;
+  .wheel-highlight{ position:absolute; top:48px; height:48px; left:50%; transform:translateX(-50%); width:200px;
     background:rgba(255,255,255,0.07); border-radius:14px; pointer-events:none; z-index:0; }
   .wheel-unit{ margin-top:10px; text-align:center; font-size:13px; color:var(--text-dim);
     text-transform:uppercase; letter-spacing:1.4px; font-weight:700; }
@@ -375,7 +397,6 @@
             <div class="wheel-highlight"></div>
             <div class="wheel-col"><div class="wheel" id="wheelMin"></div></div>
           </div>
-          <div class="wheel-unit">minuti di gioco</div>
         </div>
       </div>
 
@@ -658,15 +679,12 @@ function goToSheetPage(n){
 
 function renderSheetChrome(){
   const n = state.sheetPage;
-  sheetTitle.textContent = n===0 ? 'Statistiche' : n===1 ? 'Foto' : (state.adventure ? state.adventure.name : 'Cornice');
+  sheetTitle.textContent = n===0 ? 'Statistiche' : (state.adventure ? state.adventure.name : 'Cornice');
 
   // left nav button
   if(n===0){
     sheetNavBtn.innerHTML = 'Annulla';
     sheetNavBtn.onclick = closeSheet;
-  } else if(n===1){
-    sheetNavBtn.innerHTML = ICONS.chevron + '<span>Indietro</span>';
-    sheetNavBtn.onclick = ()=> goToSheetPage(0);
   } else {
     sheetNavBtn.innerHTML = 'Chiudi';
     sheetNavBtn.onclick = closeSheet;
@@ -675,16 +693,32 @@ function renderSheetChrome(){
   // footer CTA
   sheetFooter.innerHTML = '';
   if(n===0){
+    // one button, two jobs: pick the shot, then build the frame
     const btn = document.createElement('button');
-    btn.className='btn'; btn.textContent='Continua';
-    btn.onclick = ()=> goToSheetPage(1);
-    sheetFooter.appendChild(btn);
-  } else if(n===1){
-    const btn = document.createElement('button');
-    btn.className='btn'; btn.textContent='Genera cornice';
-    btn.disabled = !state.photo;
-    btn.onclick = ()=> goToSheetPage(2);
-    sheetFooter.appendChild(btn);
+    btn.className='btn';
+    if(state.photo){
+      btn.textContent='Genera cornice';
+      btn.onclick = ()=> goToSheetPage(2);
+    } else {
+      btn.textContent='Seleziona foto';
+      btn.onclick = ()=> fileInput.click();
+    }
+
+    if(state.photo){
+      // thumbnail and CTA share one row: tapping the thumb changes the shot
+      const row = document.createElement('div');
+      row.className = 'cta-row';
+      const chip = document.createElement('button');
+      chip.className = 'photo-chip';
+      chip.title = 'Cambia foto';
+      chip.innerHTML = `<img src="${state.photo.src}" alt="">`;
+      chip.onclick = ()=> fileInput.click();
+      row.appendChild(chip);
+      row.appendChild(btn);
+      sheetFooter.appendChild(row);
+    } else {
+      sheetFooter.appendChild(btn);
+    }
   } else {
     const saveBtn = document.createElement('button');
     saveBtn.className='btn'; saveBtn.textContent='Salva nella galleria';
@@ -757,7 +791,7 @@ pctRing.addEventListener('touchmove', e=>{ if(dragging) e.preventDefault(); }, {
 /* ---------------------------------------------------------
    TIME WHEELS
 --------------------------------------------------------- */
-const ITEM_H = 56; // must match .wheel-item height in CSS
+const ITEM_H = 48; // must match .wheel-item height in CSS
 
 /* The drum is driven by pointer events rather than native overflow
    scrolling. Toggling the page's overflow mid-gesture cancels iOS's
@@ -776,7 +810,7 @@ function buildWheel(el, max, initial, onChange){
   }
   el.appendChild(track);
 
-  const MIDY = (el.clientHeight || 224)/2 - ITEM_H/2;
+  const MIDY = (el.clientHeight || 144)/2 - ITEM_H/2;   // measured, so it tracks the media query
   let index = initial;
   let offset = -initial*ITEM_H;        // px, negative = scrolled down the list
   let dragging = false, moved = false;
@@ -1335,6 +1369,113 @@ function chainLink(c,x,y,w,h,color,cell){
     c.beginPath(); c.moveTo(x+i,y+h); c.lineTo(x+i+h,y); c.stroke();
   }
   c.globalAlpha=1; c.restore();
+}
+
+/* ---- warehouse dressing for Zombie: Urban Factory ---- */
+function palletRacking(c,x,y,w,h,upright,beam){
+  c.save(); c.beginPath(); c.rect(x,y,w,h); c.clip();
+  const bayW = 150, postW = 13;
+  for(let px=x-40; px<x+w+40; px+=bayW){
+    c.fillStyle=upright;
+    c.fillRect(px, y, postW, h);
+    // diagonal bracing between uprights
+    c.strokeStyle=upright; c.lineWidth=5; c.globalAlpha=0.75;
+    for(let by=y; by<y+h; by+=120){
+      c.beginPath(); c.moveTo(px+postW, by); c.lineTo(px+bayW-4, by+120); c.stroke();
+      c.beginPath(); c.moveTo(px+postW, by+120); c.lineTo(px+bayW-4, by); c.stroke();
+    }
+    c.globalAlpha=1;
+  }
+  for(let by=y+90; by<y+h; by+=190){           // shelf beams
+    c.fillStyle=beam; c.fillRect(x, by, w, 16);
+    c.fillStyle='rgba(0,0,0,0.35)'; c.fillRect(x, by+16, w, 5);
+  }
+  c.restore();
+}
+function crates(c,x,y,w,h,count){
+  c.save(); c.beginPath(); c.rect(x,y,w,h); c.clip();
+  for(let i=0;i<count;i++){
+    const cw=54+Math.random()*78, ch=44+Math.random()*58;
+    const cx=x+Math.random()*(w-cw), cy=y+Math.random()*(h-ch);
+    const tone=Math.random();
+    c.fillStyle = tone>0.6 ? '#4A3F2A' : (tone>0.3 ? '#3A4038' : '#2F3A33');
+    c.fillRect(cx,cy,cw,ch);
+    c.strokeStyle='rgba(0,0,0,0.45)'; c.lineWidth=3; c.strokeRect(cx,cy,cw,ch);
+    // strapping and a stencil mark
+    c.strokeStyle='rgba(216,206,170,0.28)'; c.lineWidth=3;
+    c.beginPath(); c.moveTo(cx+cw*0.3,cy); c.lineTo(cx+cw*0.3,cy+ch); c.stroke();
+    c.fillStyle='rgba(159,191,43,0.30)';
+    c.fillRect(cx+cw*0.52, cy+ch*0.28, cw*0.3, 7);
+    c.fillRect(cx+cw*0.52, cy+ch*0.5,  cw*0.22, 7);
+  }
+  c.restore();
+}
+function cageLamps(c, spots, color){
+  c.save();
+  spots.forEach(([lx,ly])=>{
+    c.strokeStyle='rgba(30,38,33,0.9)'; c.lineWidth=4;      // flex and hook
+    c.beginPath(); c.moveTo(lx, 0); c.lineTo(lx, ly-26); c.stroke();
+    const g=c.createRadialGradient(lx,ly,4,lx,ly,300);      // pooled light
+    g.addColorStop(0, color.replace('ALPHA','0.55'));
+    g.addColorStop(0.35, color.replace('ALPHA','0.16'));
+    g.addColorStop(1, color.replace('ALPHA','0'));
+    c.fillStyle=g;
+    c.beginPath(); c.moveTo(lx,ly);
+    c.lineTo(lx-190, ly+430); c.lineTo(lx+190, ly+430); c.closePath(); c.fill();
+    c.fillStyle=color.replace('ALPHA','0.92');              // bulb
+    c.beginPath(); c.arc(lx, ly, 15, 0, 7); c.fill();
+    c.strokeStyle='rgba(20,26,22,0.95)'; c.lineWidth=3;     // cage
+    c.beginPath(); c.arc(lx, ly, 26, 0, Math.PI); c.stroke();
+    for(let k=-2;k<=2;k++){
+      c.beginPath(); c.moveTo(lx+k*11, ly-4);
+      c.lineTo(lx+k*15, ly+24); c.stroke();
+    }
+  });
+  c.restore();
+}
+function chainFence(c,x,y,w,h,color,cell){
+  c.save(); c.beginPath(); c.rect(x,y,w,h); c.clip();
+  c.strokeStyle=color; c.lineWidth=3; c.globalAlpha=0.30;
+  for(let i=-h;i<w+h;i+=cell){
+    c.beginPath(); c.moveTo(x+i,y); c.lineTo(x+i+h,y+h); c.stroke();
+    c.beginPath(); c.moveTo(x+i,y+h); c.lineTo(x+i+h,y); c.stroke();
+  }
+  c.globalAlpha=0.55; c.lineWidth=7;                        // frame posts
+  c.beginPath(); c.moveTo(x+6,y); c.lineTo(x+6,y+h); c.stroke();
+  c.beginPath(); c.moveTo(x+w-6,y); c.lineTo(x+w-6,y+h); c.stroke();
+  c.globalAlpha=1; c.restore();
+}
+function shamblers(c, spots, color){
+  // barely-lit silhouettes shuffling between the racks
+  c.save();
+  spots.forEach(([sx,sy,sc])=>{
+    c.save(); c.translate(sx,sy); c.scale(sc,sc);
+    c.fillStyle=color;
+    c.beginPath(); c.arc(0,-96,21,0,7); c.fill();                       // head
+    c.beginPath();                                                       // torso, hunched
+    c.moveTo(-26,-74); c.quadraticCurveTo(-34,-10,-20,26);
+    c.lineTo(20,26); c.quadraticCurveTo(32,-16,24,-74);
+    c.quadraticCurveTo(0,-86,-26,-74); c.fill();
+    c.lineWidth=13; c.strokeStyle=color; c.lineCap='round';
+    c.beginPath(); c.moveTo(-22,-58); c.lineTo(-52,-26); c.lineTo(-58,10); c.stroke();  // arms out
+    c.beginPath(); c.moveTo(22,-58);  c.lineTo(54,-34);  c.lineTo(62,-4); c.stroke();
+    c.lineWidth=15;
+    c.beginPath(); c.moveTo(-12,26); c.lineTo(-18,86); c.stroke();       // legs
+    c.beginPath(); c.moveTo(12,26);  c.lineTo(20,86);  c.stroke();
+    c.restore();
+  });
+  c.restore();
+}
+function stencil(c, text, x, y, size, color, angle){
+  c.save();
+  c.translate(x,y); if(angle) c.rotate(angle);
+  c.textAlign='center'; c.fillStyle=color;
+  c.font = `400 ${size}px Anton`;
+  const sp = size*0.20, chars=[...text];
+  let total=-sp; chars.forEach(ch=> total += c.measureText(ch).width + sp);
+  let cx=-total/2;
+  chars.forEach(ch=>{ c.fillText(ch, cx + c.measureText(ch).width/2, 0); cx += c.measureText(ch).width + sp; });
+  c.restore();
 }
 
 /* ---- textures for the Urban Escape variants ---- */
@@ -1937,20 +2078,27 @@ function drawNameBanner(c, T){
   const name = teamName();
   if(!name) return;
   const notch = 46, inset = Math.round(CW*0.055);
+
+  // Built as a Path2D: the decor callbacks call beginPath() internally,
+  // which would wipe a path held on the context and leave the banner
+  // without its outline.
+  const shape = new Path2D();
+  shape.moveTo(inset, BAN_Y + notch);
+  shape.lineTo(inset + notch, BAN_Y);
+  shape.lineTo(CW - inset - notch, BAN_Y);
+  shape.lineTo(CW - inset, BAN_Y + notch);
+  shape.lineTo(CW - inset, BAN_Y + BAN_H);
+  shape.lineTo(inset, BAN_Y + BAN_H);
+  shape.closePath();
+
   c.save();
-  c.beginPath();
-  c.moveTo(inset, BAN_Y + notch);
-  c.lineTo(inset + notch, BAN_Y);
-  c.lineTo(CW - inset - notch, BAN_Y);
-  c.lineTo(CW - inset, BAN_Y + notch);
-  c.lineTo(CW - inset, BAN_Y + BAN_H);
-  c.lineTo(inset, BAN_Y + BAN_H);
-  c.closePath();
-  c.fillStyle = T.banner || 'rgba(10,14,26,0.94)'; c.fill();
+  c.fillStyle = T.banner || 'rgba(10,14,26,0.94)';
+  c.fill(shape);
   if(T.bannerDecor){
-    c.save(); c.clip(); T.bannerDecor(c); c.restore();
+    c.save(); c.clip(shape); T.bannerDecor(c); c.restore();
   }
-  c.strokeStyle = T.accent; c.lineWidth = 2.5; c.stroke();
+  // one flat contrasting outline
+  c.strokeStyle = T.bannerEdge || T.accent; c.lineWidth = 5; c.stroke(shape);
   c.restore();
 
   c.save();
@@ -2055,7 +2203,7 @@ function drawStatsBar(c, T){
 
   // VRG wordmark, right, centred in the bar
   if(logoReady){
-    const lw = Math.round(CW*0.155);
+    const lw = Math.round(CW*0.172);
     const lh = Math.round(lw * logoImg.height / logoImg.width);
     c.drawImage(logoImg, CW - pad - lw, cy - lh/2, lw, lh);
   }
@@ -2103,6 +2251,7 @@ function drawCrime(c, img){
     icon:'magnifier', badge:'#111111', badgeIcon:'#F4C61B',
     title:'CRIME ROOM', titleFont:'400 80px Anton', titleColor:'#F4C61B',
     edge:'#F4C61B', edgeW:6, scrim:'rgba(8,8,8,0.60)', photoGrain:0.05,
+    bannerEdge:'#141008',
     banner:'#F4C61B', bannerInk:'#141008', nameFont:'400 54px Anton',
     bar:'#0C0C0C', barInk:'#F2EFE6', barIcon:'#F4C61B', showTime:false, solvedMode:true,
     pctColor:'#F4C61B', pctFont:'400 62px "Special Elite"', barFont:'400 46px "Special Elite"',
@@ -2120,6 +2269,7 @@ function drawHero(c, img){
     icon:'lightning', badge:'#1B2635', badgeIcon:'#F2C14E',
     title:'SUPERHEROES', titleFont:'92px Bangers', titleColor:'#F2C14E',
     edge:'#E23744', edgeW:8, scrim:'rgba(10,15,22,0.62)',
+    bannerEdge:'#FFE9A8',
     banner:'#C81E2A', bannerInk:'#FFE9A8', nameFont:'62px Bangers',
     bar:'#1E2A3A', barInk:'#EAF1F8', barIcon:'#6FD3F7', timeIcon:'timer',
     pctColor:'#F2C14E', pctFont:'400 82px Bangers', barFont:'800 46px Inter',
@@ -2151,9 +2301,10 @@ function drawAlice(c, img){
     title:'Alice in Wonderland', titleFont:'92px Sacramento', titleColor:'#FFFFFF',
     edge:'#A8C8E0', edgeW:7, scrim:'rgba(52,38,70,0.56)',
     photoVignette:'rgba(76,54,100,0.28)',
+    bannerEdge:'#6B4E8C',
     banner:'#A8C8E0', bannerInk:'#2E2140', nameFont:'700 50px "Playfair Display"',
     bar:'#B9D4E6', barInk:'#2E2140', barIcon:'#6B4E8C', timeIcon:'clock',
-    pctColor:'#6B4E8C', pctFont:'700 62px "Playfair Display"', barFont:'700 46px "Playfair Display"',
+    pctColor:'#6B4E8C', pctFont:'700 82px "Playfair Display"', barFont:'700 46px "Playfair Display"',
     trim:'#8FB7D1',
     borderDecor:(c)=>{ cardSuits(c,0,0,CW,CH,'rgba(255,255,255,0.30)',46); },
     trimDecor:(c)=>{ cardSuits(c,0,TRIM_Y,CW,CH-TRIM_Y,'rgba(46,33,64,0.18)',40); }
@@ -2168,6 +2319,7 @@ function drawMagic(c, img){
     title:'SCHOOL OF MAGIC', titleSpacing:7, titleFont:'900 54px "Cinzel Decorative"', titleColor:'#FFE6B0',
     edge:'#E8B45C', edgeW:7, scrim:'rgba(28,12,6,0.60)',
     photoVignette:'rgba(58,26,12,0.42)',
+    bannerEdge:'#E8B45C',
     banner:'#7E2C12', bannerInk:'#FFE6B0', nameFont:'900 46px "Cinzel Decorative"',
     bar:'#241008', barInk:'#FFE6B0', barIcon:'#E8B45C', timeIcon:'hourglass',
     pctColor:'#FFD892', pctFont:'900 58px "Cinzel Decorative"', barFont:'700 46px "Cinzel Decorative"',
@@ -2206,6 +2358,7 @@ function drawUrbanBlackout(c, img){
     title:'URBAN ESCAPE|BLACKOUT', titleFont:'400 58px Anton', titleSpacing:5, titleColor:'#E7EAF2', titleColor2:'#F2D24B',
     edge:'#F2D24B', edgeW:7, scrim:'rgba(10,10,14,0.60)',
     photoVignette:'rgba(6,6,10,0.52)',
+    bannerEdge:'#F2D24B',
     banner:'#12131A', bannerInk:'#F2D24B', nameFont:'400 52px Anton', nameSpacing:3,
     bar:'#101119', barInk:'#EDEFF5', barIcon:'#F2D24B',
     pctColor:'#F2D24B', pctFont:'400 70px Anton', barFont:'800 42px Inter',
@@ -2229,6 +2382,7 @@ function drawUrbanMindfall(c, img){
     title:'URBAN ESCAPE|MINDFALL', titleFont:'400 58px Anton', titleSpacing:5, titleColor:'#E9DBFF', titleColor2:'#28E0C8',
     edge:'#B15CF0', edgeW:7, scrim:'rgba(16,8,32,0.62)',
     photoVignette:'rgba(20,8,40,0.50)',
+    bannerEdge:'#28E0C8',
     banner:'#170C2E', bannerInk:'#28E0C8', nameFont:'400 52px Anton', nameSpacing:3,
     bar:'#150A2A', barInk:'#EBE0FF', barIcon:'#28E0C8',
     pctColor:'#28E0C8', pctFont:'400 70px Anton', barFont:'800 42px Inter',
@@ -2252,6 +2406,7 @@ function drawUrbanTreasure(c, img){
     title:'URBAN ESCAPE|CACCIA AL TESORO', titleFont:'700 52px "Playfair Display"', titleSpacing:4, titleColor:'#F6E4BE', titleColor2:'#D9A441',
     edge:'#D9A441', edgeW:7, scrim:'rgba(42,26,12,0.60)',
     photoVignette:'rgba(58,36,16,0.42)',
+    bannerEdge:'#D9A441',
     banner:'#3A2410', bannerInk:'#F6E4BE', nameFont:'700 50px "Playfair Display"', nameSpacing:2,
     bar:'#33200E', barInk:'#F6E4BE', barIcon:'#D9A441',
     pctColor:'#D9A441', pctFont:'700 68px "Playfair Display"', barFont:'800 42px "Playfair Display"',
@@ -2275,6 +2430,7 @@ function drawZombieMoon(c, img){
     edge:'#B9C6D4', edgeW:6, scrim:'rgba(4,7,12,0.64)',
     photoTint:'rgba(10,16,26,0.24)', photoVignette:'rgba(2,4,8,0.80)',
     photoGrain:0.09,
+    bannerEdge:'#EFEDE6',
     banner:'#0B1018', bannerInk:'#EFEDE6', nameFont:'400 58px "Rubik Distressed"',
     bar:'#0B0E14', barInk:'#E6E9EE', barIcon:'#C1121F', timeIcon:'timer',
     pctColor:'#D62828', pctFont:'400 64px Anton', barFont:'400 46px Anton',
@@ -2321,27 +2477,45 @@ function drawZombieFactory(c, img){
     edge:'#9FBF2B', edgeW:9, scrim:'rgba(9,16,13,0.62)',
     photoTint:'rgba(24,48,38,0.20)', photoVignette:'rgba(4,9,7,0.78)',
     photoGrain:0.10,
+    bannerEdge:'#9FBF2B',
     banner:'#101915', bannerInk:'#9FBF2B', nameFont:'400 58px "Rubik Distressed"',
     bar:'#0E1613', barInk:'#E2EFE1', barIcon:'#9FBF2B', timeIcon:'hourglass',
     pctColor:'#9FBF2B', pctFont:'400 64px Anton', barFont:'400 46px Anton',
     trim:'#090F0C',
     borderDecor:(c)=>{
-      corrugated(c,0,0,CW,CH,'#3C4A41','#131B17',30);
-      // sodium lamp wash from the top corners
-      [0.12,0.88].forEach(fx=>{               // sickly vapour lamps
-        const rg=c.createRadialGradient(CW*fx,90,10,CW*fx,90,520);
-        rg.addColorStop(0,'rgba(159,191,43,0.30)'); rg.addColorStop(1,'rgba(159,191,43,0)');
-        c.fillStyle=rg; c.fillRect(0,0,CW,700);
-      });
-      pipes(c,'#46574C');
-      rustDrips(c,0,0,CW,40,'#7A4A20');
-      oilStains(c,0,0,CW,CH,'#050907',18);
-      emergencyWash(c,'160,14,20',0.52);     // crimson alarm floods the frame
-      // red rim light hugging the photo opening
-      const rim=c.createRadialGradient(CW/2,CH/2,Math.min(CW,CH)*0.34,CW/2,CH/2,Math.max(CW,CH)*0.78);
-      rim.addColorStop(0,'rgba(196,22,28,0.42)'); rim.addColorStop(1,'rgba(120,8,14,0.10)');
-      c.fillStyle=rim; c.fillRect(0,0,CW,CH);
-      clawMarks(c,0,0,CW,CH,'#C4161C',14);
+      // a warehouse interior: concrete, racking, stacked stock
+      const w=c.createLinearGradient(0,0,0,CH);
+      w.addColorStop(0,'#2B352E'); w.addColorStop(0.55,'#1B2620'); w.addColorStop(1,'#0B110E');
+      c.fillStyle=w; c.fillRect(0,0,CW,CH);
+      corrugated(c,0,0,CW,CH,'#39453D','#151E19',34);
+      palletRacking(c,0,0,CW,CH,'#2A3630','#46564A');
+      crates(c,0,0,CW,CH,26);
+      chainFence(c,0,CH*0.30,SIDE,CH*0.34,'#7E8C72',44);
+      chainFence(c,CW-SIDE,CH*0.46,SIDE,CH*0.34,'#7E8C72',44);
+
+      // the dead, shuffling between the racks
+      shamblers(c,[[SIDE*0.50, CH*0.60, 0.74],
+                   [CW-SIDE*0.50, CH*0.38, 0.66],
+                   [SIDE*0.52, CH*0.25, 0.48],
+                   [CW-SIDE*0.48, CH*0.78, 0.56]], 'rgba(5,8,6,0.94)');
+      // a rim of lamp light down one side of each figure
+      shamblers(c,[[SIDE*0.50-4, CH*0.60, 0.74],
+                   [CW-SIDE*0.50+4, CH*0.38, 0.66]], 'rgba(176,196,120,0.16)');
+
+      // hanging cage lamps, one of them failing
+      cageLamps(c, [[SIDE*0.52, 150], [CW-SIDE*0.52, 210]], 'rgba(214,226,150,ALPHA)');
+      const flick=c.createRadialGradient(CW*0.5,CH*0.94,10,CW*0.5,CH*0.94,420);
+      flick.addColorStop(0,'rgba(196,22,28,0.26)'); flick.addColorStop(1,'rgba(196,22,28,0)');
+      c.fillStyle=flick; c.fillRect(0,CH*0.64,CW,CH*0.36);
+
+      pipes(c,'#3E4C43');
+      rustDrips(c,0,0,CW,34,'#6E4520');
+      oilStains(c,0,0,CW,CH,'#050907',20);
+      // gouges in the metal, pale — not red
+      clawMarks(c,0,0,CW,CH,'rgba(196,212,186,0.32)',6);
+      stencil(c,'QUARANTINE', SIDE*0.5, CH*0.50, 30, 'rgba(159,191,43,0.42)', -Math.PI/2);
+      stencil(c,'ZONE 4',     CW-SIDE*0.5, CH*0.20, 28, 'rgba(206,220,198,0.30)', Math.PI/2);
+      grain(c,0,0,CW,CH,0.05);
     },
     barDecor:(c)=>{ rustDrips(c,0,BAR_Y,CW,8,'#7A4A20'); },
     trimDecor:(c)=>{ corrugated(c,0,TRIM_Y,CW,CH-TRIM_Y,'#28332C','#0F1512',26); }
