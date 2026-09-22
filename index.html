@@ -304,7 +304,11 @@
   .phone-mock{ margin: 0 auto; width: min(96vw, 460px); height:auto; max-height:100%; aspect-ratio:1080/1350; border-radius:14px; overflow:hidden; box-shadow:0 18px 44px -14px rgba(0,0,0,.75); position:relative; background:#000; border:1px solid rgba(255,255,255,0.10); }
   .phone-mock img{ width:100%; height:100%; display:block;
     -webkit-touch-callout:default; -webkit-user-select:auto; user-select:auto; }
-  .save-hint{ text-align:center; font-size:13px; color:var(--text-dim); margin:12px 0 0; }
+  /* only a fallback: hidden whenever the system save actually works */
+  .save-hint{ display:none; text-align:center; font-size:13px; color:var(--text-dim);
+    margin:12px auto 0; max-width:30ch; line-height:1.45; }
+  .save-hint.show{ display:block; animation: rowBack .3s var(--spring); }
+  .save-hint b{ color:var(--text); font-weight:700; }
   .loading-wrap{ display:flex; flex-direction:column; align-items:center; justify-content:center; height:50vh; gap:16px; }
   .spinner{ width:34px; height:34px; border-radius:50%; border:3px solid var(--glass-brd); border-top-color: var(--tint, var(--accent)); animation: spin 0.8s linear infinite; }
   @keyframes spin{ to{ transform:rotate(360deg);} }
@@ -413,7 +417,7 @@
           <div class="phone-mock" id="phoneMock" style="display:none;">
             <img id="framePreview" alt="cornice">
           </div>
-          <p class="save-hint" id="saveHint">Tieni premuto sull'immagine per salvarla</p>
+          <p class="save-hint" id="saveHint">Tieni premuto sull'immagine e scegli <b>Salva immagine</b></p>
           <canvas id="frameCanvas" width="1080" height="1350" style="display:none"></canvas>
         </div>
       </div>
@@ -484,17 +488,17 @@ const THEMES = [
     fontLoad:['900 64px "Cinzel Decorative"','700 16px Inter']
   },
   {
-    id:'ublackout', group:'urban', short:'Blackout', name:'Urban Escape: Blackout', tag:'Urban · Notturna', icon:ICONS.ublackout, dur:90,
+    id:'ublackout', group:'urban', maxDur:120, short:'Blackout', name:'Urban Escape: Blackout', tag:'Urban · Notturna', icon:ICONS.ublackout, dur:90,
     c1:'#F2D24B', c2:'#1B1B22', accent:'#F2D24B', accent2:'#2E6FB8',
     fontLoad:['400 80px Anton','800 46px Inter']
   },
   {
-    id:'umind', group:'urban', short:'Mindfall', name:'Urban Escape: Mindfall', tag:'Urban · Psichedelica', icon:ICONS.umind, dur:90,
+    id:'umind', group:'urban', maxDur:120, short:'Operation Mindfall', name:'Urban Escape: Operation Mindfall', tag:'Urban · Psichedelica', icon:ICONS.umind, dur:90,
     c1:'#C06BF0', c2:'#1A1030', accent:'#B15CF0', accent2:'#28E0C8',
     fontLoad:['400 80px Anton','800 46px Inter']
   },
   {
-    id:'utreasure', group:'urban', short:'Caccia al Tesoro', name:'Urban Escape: Caccia al Tesoro', tag:'Urban · Pirati', icon:ICONS.utreasure, dur:90,
+    id:'utreasure', group:'urban', maxDur:120, short:'Caccia al Tesoro', name:'Urban Escape: Caccia al Tesoro', tag:'Urban · Pirati', icon:ICONS.utreasure, dur:90,
     fontLoad:['700 62px "Playfair Display"','800 46px "Playfair Display"'],
     c1:'#D9A441', c2:'#3A2410', accent:'#D9A441', accent2:'#1E5B63'
   },
@@ -557,12 +561,24 @@ if(urban.length){
   urban.forEach(th=> wrap.appendChild(makeRow(th, true)));
   advGrid.appendChild(wrap);
 
-  head.onclick = ()=>{
-    const open = wrap.classList.toggle('open');
+  function setUrbanOpen(open, animate){
+    wrap.classList.toggle('open', open);
     head.classList.toggle('open', open);
+    if(!animate){ wrap.style.transition='none'; }
     wrap.style.maxHeight = open ? wrap.scrollHeight + 'px' : '0px';
+    if(!animate){ requestAnimationFrame(()=>{ wrap.style.transition=''; }); }
+    try{ localStorage.setItem('vf-urban-open', open ? '1' : '0'); }catch(e){}
+  }
+  head.onclick = ()=>{
+    const open = !wrap.classList.contains('open');
+    setUrbanOpen(open, true);
     if(open) setTimeout(()=> wrap.scrollIntoView({block:'end', behavior:'smooth'}), 120);
   };
+  // Remember how it was left: if the team runs Urban Escape, the variants
+  // are already showing next time instead of costing an extra tap.
+  let wasOpen = false;
+  try{ wasOpen = localStorage.getItem('vf-urban-open') === '1'; }catch(e){}
+  if(wasOpen) requestAnimationFrame(()=> setUrbanOpen(true, false));
 }
 
 /* ---------------------------------------------------------
@@ -601,6 +617,8 @@ function openSheet(theme){
   sheet.style.setProperty('--tint', theme.accent);
   applyTint(theme.accent);
   setupTimeWheel(theme);
+  // the keyboard is up straight away: the name is typed every single time
+  setTimeout(()=>{ try{ teamInput.focus({preventScroll:true}); }catch(e){} }, 420);
   // Crime Room reports an outcome, not a completion percentage
   const usesStamp = !!theme.solvedMode;
   solvedWrap.classList.toggle('show', usesStamp);
@@ -669,8 +687,8 @@ function renderSheetChrome(){
     sheetNavBtn.innerHTML = 'Annulla';
     sheetNavBtn.onclick = closeSheet;
   } else {
-    sheetNavBtn.innerHTML = 'Chiudi';
-    sheetNavBtn.onclick = closeSheet;
+    sheetNavBtn.innerHTML = ICONS.chevron + '<span>Indietro</span>';
+    sheetNavBtn.onclick = ()=> goToSheetPage(0);
   }
 
   // footer CTA
@@ -684,7 +702,7 @@ function renderSheetChrome(){
       btn.onclick = ()=> goToSheetPage(2);
     } else {
       btn.textContent='Seleziona foto';
-      btn.onclick = ()=> fileInput.click();
+      btn.onclick = pickPhoto;
     }
 
     if(state.photo){
@@ -695,7 +713,7 @@ function renderSheetChrome(){
       chip.className = 'photo-chip';
       chip.title = 'Cambia foto';
       chip.innerHTML = `<img src="${state.photo.src}" alt="">`;
-      chip.onclick = ()=> fileInput.click();
+      chip.onclick = pickPhoto;
       row.appendChild(chip);
       row.appendChild(btn);
       sheetFooter.appendChild(row);
@@ -704,7 +722,7 @@ function renderSheetChrome(){
     }
   } else {
     const saveBtn = document.createElement('button');
-    saveBtn.className='btn'; saveBtn.textContent='Salva nella galleria';
+    saveBtn.className='btn'; saveBtn.textContent = IS_NATIVE ? 'Salva in Foto' : 'Salva nella galleria';
     saveBtn.onclick = saveImage;
     sheetFooter.appendChild(saveBtn);
 
@@ -898,7 +916,8 @@ function setupTimeWheel(theme){
     return;
   }
   card.style.display = '';
-  const max = theme.dur + OVERTIME;       // e.g. 60' room -> wheel runs to 75'
+  // a room can set its own ceiling; otherwise standard length + 15'
+  const max = theme.maxDur || (theme.dur + OVERTIME);
   state.min = theme.dur;                  // but it opens on the standard duration
   buildWheel(document.getElementById('wheelMin'), max, theme.dur, v=> state.min = v);
 }
@@ -929,21 +948,57 @@ teamInput.addEventListener('keydown', e=>{ if(e.key==='Enter') teamInput.blur();
 --------------------------------------------------------- */
 const photoDrop = document.getElementById('photoDrop');
 const fileInput = document.getElementById('fileInput');
-photoDrop.onclick = ()=> fileInput.click();
+photoDrop.onclick = ()=> pickPhoto();
+// shared by the browser file input and the native photo picker
+function loadPhotoFromUrl(url){
+  state.photo = new Image();
+  state.photo.onload = ()=>{
+    photoDrop.innerHTML = `<img src="${url}"><div class="chg">Cambia foto</div>`;
+    renderSheetChrome();
+    // picking the shot is the commit: go straight to the finished frame
+    if(state.sheetPage === 0){ teamInput.blur(); goToSheetPage(2); }
+  };
+  state.photo.src = url;
+}
+
 fileInput.onchange = (e)=>{
   const f = e.target.files[0];
   if(!f) return;
   const reader = new FileReader();
-  reader.onload = ev=>{
-    state.photo = new Image();
-    state.photo.onload = ()=>{
-      photoDrop.innerHTML = `<img src="${ev.target.result}"><div class="chg">Cambia foto</div>`;
-      renderSheetChrome();
-    };
-    state.photo.src = ev.target.result;
-  };
+  reader.onload = ev=> loadPhotoFromUrl(ev.target.result);
   reader.readAsDataURL(f);
+  fileInput.value = '';            // allow picking the same file again
 };
+
+/* ---------------------------------------------------------
+   NATIVE BRIDGE
+   Inside the iOS app (Expo WebView) the photo library opens directly
+   and the frame is written straight to Photos — no system menus.
+   In Safari none of this exists and the web behaviour is unchanged.
+--------------------------------------------------------- */
+const IS_NATIVE = !!(window.ReactNativeWebView && window.ReactNativeWebView.postMessage);
+function nativeSend(msg){ window.ReactNativeWebView.postMessage(JSON.stringify(msg)); }
+
+function pickPhoto(){
+  if(IS_NATIVE) nativeSend({type:'pickPhoto'});
+  else fileInput.click();
+}
+
+function onNativeMessage(ev){
+  let m; try{ m = JSON.parse(ev.data); }catch(e){ return; }
+  if(!m || !m.type) return;
+  if(m.type === 'photo'){
+    if(m.data) loadPhotoFromUrl(m.data);
+  } else if(m.type === 'saved'){
+    savingNow = false;
+    if(m.ok){ toast('Salvata in Foto'); setTimeout(closeSheet, 650); }
+    else if(m.reason === 'permission'){ toast('Consenti l\'accesso a Foto nelle Impostazioni'); }
+    else { toast('Salvataggio non riuscito'); }
+    renderSheetChrome();
+  }
+}
+window.addEventListener('message', onNativeMessage);
+document.addEventListener('message', onNativeMessage);   // Android delivers here
 
 /* ---------------------------------------------------------
    CANVAS FRAME GENERATION
@@ -1352,6 +1407,93 @@ function chainLink(c,x,y,w,h,color,cell){
     c.beginPath(); c.moveTo(x+i,y+h); c.lineTo(x+i+h,y); c.stroke();
   }
   c.globalAlpha=1; c.restore();
+}
+
+/* ---- espionage dressing for Urban Escape: Mindfall ---- */
+function scanLines(c,x,y,w,h,color,gap){
+  c.save(); c.beginPath(); c.rect(x,y,w,h); c.clip();
+  c.fillStyle=color;
+  for(let yy=y; yy<y+h; yy+=gap) c.fillRect(x,yy,w,1);
+  c.restore();
+}
+function hudGrid(c,x,y,w,h,color,cell){
+  c.save(); c.beginPath(); c.rect(x,y,w,h); c.clip();
+  c.strokeStyle=color; c.lineWidth=1;
+  for(let xx=x; xx<x+w; xx+=cell){ c.beginPath(); c.moveTo(xx,y); c.lineTo(xx,y+h); c.stroke(); }
+  for(let yy=y; yy<y+h; yy+=cell){ c.beginPath(); c.moveTo(x,yy); c.lineTo(x+w,yy); c.stroke(); }
+  c.restore();
+}
+function reticle(c,cx,cy,r,color){
+  c.save(); c.strokeStyle=color; c.lineWidth=2.5;
+  c.beginPath(); c.arc(cx,cy,r,0,7); c.stroke();
+  c.lineWidth=1.5; c.beginPath(); c.arc(cx,cy,r*0.55,0,7); c.stroke();
+  // broken cross-hairs, gap in the middle
+  c.lineWidth=2.5;
+  [[0,-1],[0,1],[-1,0],[1,0]].forEach(([dx,dy])=>{
+    c.beginPath();
+    c.moveTo(cx+dx*r*0.22, cy+dy*r*0.22);
+    c.lineTo(cx+dx*r*1.25, cy+dy*r*1.25); c.stroke();
+  });
+  for(let k=0;k<24;k++){                     // range ticks
+    const a=(Math.PI*2/24)*k, l = k%6===0 ? 0.16 : 0.07;
+    c.beginPath();
+    c.moveTo(cx+Math.cos(a)*r, cy+Math.sin(a)*r);
+    c.lineTo(cx+Math.cos(a)*r*(1-l), cy+Math.sin(a)*r*(1-l)); c.stroke();
+  }
+  c.fillStyle=color; c.beginPath(); c.arc(cx,cy,3,0,7); c.fill();
+  c.restore();
+}
+function radarSweep(c,cx,cy,r,color){
+  c.save();
+  c.strokeStyle=color.replace('ALPHA','0.45'); c.lineWidth=1.6;
+  for(let k=1;k<=3;k++){ c.beginPath(); c.arc(cx,cy,r*k/3,0,7); c.stroke(); }
+  c.beginPath(); c.moveTo(cx-r,cy); c.lineTo(cx+r,cy); c.moveTo(cx,cy-r); c.lineTo(cx,cy+r); c.stroke();
+  // the sweep wedge fading behind the beam
+  const a0=-0.9;
+  for(let i=0;i<28;i++){
+    const a=a0 - i*0.035;
+    c.fillStyle=color.replace('ALPHA', String(0.42*(1-i/28)));
+    c.beginPath(); c.moveTo(cx,cy); c.arc(cx,cy,r,a-0.036,a); c.closePath(); c.fill();
+  }
+  c.strokeStyle=color.replace('ALPHA','0.95'); c.lineWidth=2.5;
+  c.beginPath(); c.moveTo(cx,cy); c.lineTo(cx+Math.cos(a0)*r, cy+Math.sin(a0)*r); c.stroke();
+  [[0.45,-0.3],[0.62,1.9],[0.28,3.4]].forEach(([d,a])=>{     // contacts
+    c.fillStyle=color.replace('ALPHA','0.95');
+    c.beginPath(); c.arc(cx+Math.cos(a)*r*d, cy+Math.sin(a)*r*d, 4, 0, 7); c.fill();
+  });
+  c.restore();
+}
+function redactions(c,x,y,w,h,count){
+  // lines of a classified file, most of it blacked out
+  c.save(); c.beginPath(); c.rect(x,y,w,h); c.clip();
+  for(let i=0;i<count;i++){
+    const ly=y+Math.random()*h, lx=x+8+Math.random()*(w*0.2);
+    let cx=lx;
+    const end=x+w-8;
+    while(cx < end){
+      const seg=14+Math.random()*52;
+      const black=Math.random()>0.45;
+      c.fillStyle= black ? 'rgba(2,4,6,0.92)' : 'rgba(170,200,196,0.22)';
+      c.fillRect(cx, ly, Math.min(seg, end-cx), black ? 11 : 4);
+      cx += seg + 6;
+    }
+  }
+  c.restore();
+}
+function monoText(c,text,x,y,size,color,align,angle){
+  c.save(); c.translate(x,y); if(angle) c.rotate(angle);
+  c.textAlign=align||'left'; c.fillStyle=color;
+  c.font=`500 ${size}px Oxanium, "SF Mono", Menlo, monospace`;
+  c.fillText(text,0,0);
+  c.restore();
+}
+function cornerBrackets(c,r,color,len,lw){
+  c.save(); c.strokeStyle=color; c.lineWidth=lw; c.lineCap='square';
+  const pts=[[r.x,r.y,1,1],[r.x+r.w,r.y,-1,1],[r.x,r.y+r.h,1,-1],[r.x+r.w,r.y+r.h,-1,-1]];
+  pts.forEach(([px,py,dx,dy])=>{
+    c.beginPath(); c.moveTo(px, py+dy*len); c.lineTo(px,py); c.lineTo(px+dx*len,py); c.stroke();
+  });
+  c.restore();
 }
 
 /* ---- warehouse dressing for Zombie: Urban Factory ---- */
@@ -2358,25 +2500,59 @@ function drawUrbanBlackout(c, img){
 }
 
 /* Urban Escape: Mindfall — psychological, glitched neon */
+/* Urban Escape: Mindfall — espionage: surveillance HUD, classified file */
 function drawUrbanMindfall(c, img){
+  const HUD = '#3FE0C5', LASER = '#FF3B4E';
+  const r = photoRect();
   renderFrame(c, img, {
-    bg:['#241443','#0C0718'], radius:12, accent:'#B15CF0', accent2:'#28E0C8',
-    icon:'brain', badge:'#160B2C', badgeIcon:'#28E0C8',
-    title:'URBAN ESCAPE|MINDFALL', titleFont:'400 58px Anton', titleSpacing:5, titleColor:'#E9DBFF', titleColor2:'#28E0C8',
-    edge:'#B15CF0', edgeW:7, scrim:'rgba(16,8,32,0.62)',
-    photoVignette:'rgba(20,8,40,0.50)',
-    bannerEdge:'#28E0C8',
-    banner:'#170C2E', bannerInk:'#28E0C8', nameFont:'400 52px Anton', nameSpacing:3,
-    bar:'#150A2A', barInk:'#EBE0FF', barIcon:'#28E0C8',
-    pctColor:'#28E0C8', pctFont:'400 70px Anton', barFont:'800 42px Inter',
-    trim:'#0C0718',
+    bg:['#0C1417','#05090B'], radius:6, accent:HUD, accent2:LASER,
+    icon:'crosshair', badge:'#071013', badgeIcon:HUD,
+    title:'URBAN ESCAPE|OPERATION MINDFALL', titleFont:'600 56px Oxanium', titleSpacing:6,
+    titleColor:'#DDEFEA', titleColor2:HUD,
+    edge:'rgba(63,224,197,0.55)', edgeW:3, scrim:'rgba(4,10,12,0.62)',
+    photoVignette:'rgba(2,8,10,0.46)',
+    bannerEdge:HUD,
+    banner:'#071013', bannerInk:HUD, nameFont:'600 50px Oxanium', nameSpacing:6,
+    bar:'#060D10', barInk:'#DDEFEA', barIcon:HUD,
+    pctColor:HUD, pctFont:'600 70px Oxanium', barFont:'600 40px Oxanium',
+    trim:'#05090B',
     borderDecor:(c)=>{
       const g=c.createLinearGradient(0,0,CW,CH);
-      g.addColorStop(0,'#2C1652'); g.addColorStop(0.5,'#160A2E'); g.addColorStop(1,'#0C0718');
+      g.addColorStop(0,'#10191D'); g.addColorStop(0.6,'#0A1215'); g.addColorStop(1,'#05090B');
       c.fillStyle=g; c.fillRect(0,0,CW,CH);
-      rippleRings(c,0,0,CW,CH,'rgba(177,92,240,0.28)',7);
-      glitchBars(c,0,0,CW,CH,'#28E0C8','#B15CF0',22);
-      sparkles(c,0,0,CW,CH,'#C9A8FF',70);
+      hudGrid(c,0,0,CW,CH,'rgba(63,224,197,0.07)',36);
+      scanLines(c,0,0,CW,CH,'rgba(63,224,197,0.05)',4);
+
+      // classified file fragments down the left side
+      redactions(c,0,CH*0.18,SIDE,CH*0.46,22);
+      monoText(c,'CLASSIFIED', SIDE*0.5, CH*0.44, 26, 'rgba(255,59,78,0.70)', 'center', -Math.PI/2);
+
+      // targeting and radar down the right side
+      reticle(c, CW-SIDE*0.5, CH*0.30, 46, 'rgba(63,224,197,0.70)');
+      radarSweep(c, CW-SIDE*0.5, CH*0.60, 54, 'rgba(63,224,197,ALPHA)');
+
+      // surveillance readouts
+      monoText(c,'● REC', 26, 34, 22, LASER, 'left');
+      monoText(c,'CAM 07', CW-26, 34, 20, 'rgba(221,239,234,0.70)', 'right');
+      monoText(c,'43.8766N  11.0966E', SIDE*0.5, CH*0.705, 15, 'rgba(63,224,197,0.60)', 'center', -Math.PI/2);
+      monoText(c,'AGENT VG-0' + String(Math.floor(Math.random()*900+100)),
+               CW-SIDE*0.5, CH*0.715, 15, 'rgba(63,224,197,0.60)', 'center', Math.PI/2);
+
+      // laser tripwires crossing the side bands
+      c.save();
+      c.strokeStyle='rgba(255,59,78,0.55)'; c.lineWidth=2;
+      c.shadowColor=LASER; c.shadowBlur=10;
+      [[0,CH*0.12,SIDE,CH*0.16],[CW-SIDE,CH*0.16,CW,CH*0.11],[CW-SIDE,CH*0.46,CW,CH*0.42]].forEach(([x1,y1,x2,y2])=>{
+        c.beginPath(); c.moveTo(x1,y1); c.lineTo(x2,y2); c.stroke();
+      });
+      c.restore();
+    },
+    photoDecor:(c,rr)=>{
+      // viewfinder corners and a timestamp, like a surveillance still
+      cornerBrackets(c, {x:rr.x+14, y:rr.y+14, w:rr.w-28, h:rr.h-28}, 'rgba(63,224,197,0.85)', 46, 4);
+      const d=new Date(), p=n=>String(n).padStart(2,'0');
+      monoText(c, `${p(d.getDate())}.${p(d.getMonth()+1)}.${d.getFullYear()}  ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`,
+               rr.x+rr.w-30, BAN_Y-22, 18, 'rgba(221,239,234,0.80)', 'right');
     }
   });
 }
@@ -2512,6 +2688,7 @@ async function generateFrame(){
   const loadingWrap = document.getElementById('loadingWrap');
   const phoneMock = document.getElementById('phoneMock');
   loadingWrap.style.display='flex'; phoneMock.style.display='none';
+  document.getElementById('saveHint').classList.remove('show');
   document.getElementById('resultTitle').textContent = state.adventure.name;
 
   try{
@@ -2564,6 +2741,8 @@ function prepareFile(){
     if(!b) return;
     try{ readyFile = new File([b], `virtualgate-${state.adventure.id}.png`, {type:'image/png'}); }
     catch(e){ readyFile = null; }
+    // the note is for devices that can't hand the file to the system
+    document.getElementById('saveHint').classList.toggle('show', !IS_NATIVE && !canShareFile());
   }, 'image/png');
 }
 
@@ -2574,11 +2753,23 @@ function canShareFile(){
 // One tap: the share sheet opens straight from the button, which is the
 // only route that writes to Photos on iOS. If it isn't available the
 // preview itself can be long-pressed, which is what the hint says.
+let savingNow = false;
 function saveImage(){
+  if(IS_NATIVE){
+    if(savingNow) return;
+    savingNow = true;
+    nativeSend({ type:'savePhoto', data: readyData || canvas.toDataURL('image/png'),
+                 name: `virtualgate-${state.adventure.id}-${Date.now()}.png` });
+    return;
+  }
   if(canShareFile()){
-    navigator.share({files:[readyFile]}).catch(err=>{
+    navigator.share({files:[readyFile]}).then(()=>{
+      toast('Fatto');
+      setTimeout(closeSheet, 500);        // ready for the next team
+    }).catch(err=>{
       if(err && err.name === 'AbortError') return;
-      toast('Tieni premuto sull\'immagine per salvarla');
+      document.getElementById('saveHint').classList.add('show');
+      toast('Salva tenendo premuta l\'immagine');
     });
     return;
   }
