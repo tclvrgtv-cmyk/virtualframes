@@ -264,6 +264,25 @@
   .field::placeholder{ color:rgba(245,245,247,0.28); font-weight:500; }
   .field:focus{ border-color: var(--tint, var(--accent)); }
 
+  /* random team name: dice button next to the field + IT/EN switch */
+  .name-row{ display:flex; gap:10px; align-items:stretch; }
+  .name-row .field{ flex:1; min-width:0; width:auto; }
+  .dice-btn{
+    flex:0 0 auto; width:52px; min-height:52px; border:none; border-radius:14px; cursor:pointer;
+    background:var(--tint, var(--accent)); color:#0c0c0c; display:flex; align-items:center; justify-content:center;
+    touch-action:manipulation; transition: transform .15s var(--spring);
+  }
+  .dice-btn:active{ transform:scale(.92); }
+  .dice-btn svg{ width:26px; height:26px; transition: transform .45s var(--spring); }
+  .dice-btn.rolling svg{ transform: rotate(360deg); }
+  .lang-toggle{ display:flex; justify-content:center; gap:6px; margin:10px 62px 0 0; }  /* centred under the input (dice = 52px + 10px gap) */
+  .lang-toggle button{
+    border:1px solid rgba(255,255,255,0.22); background:rgba(255,255,255,0.12); color:rgba(245,245,247,0.82);
+    font-size:12px; font-weight:800; letter-spacing:1.2px; padding:6px 16px; border-radius:100px; line-height:1;
+    cursor:pointer; touch-action:manipulation;
+  }
+  .lang-toggle button.on{ background:var(--tint, var(--accent)); border-color:transparent; color:#0c0c0c; }
+
   .card{ background:#1b1b1f; border:1px solid var(--glass-brd); border-radius:18px; padding:12px 12px 10px; }
   .card-label{ font-size:11px; text-transform:uppercase; letter-spacing:1.1px; color:var(--text-dim); font-weight:700; margin-bottom:6px; text-align:center; }
 
@@ -357,8 +376,17 @@
 
         <div class="field-wrap">
           <label class="field-label" for="teamInput">Nome squadra</label>
-          <input id="teamInput" class="field" type="text" maxlength="22" placeholder="Es. I Detective"
-                 autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="done">
+          <div class="name-row">
+            <input id="teamInput" class="field" type="text" maxlength="22" placeholder="Es. I Detective"
+                   autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="done">
+            <button class="dice-btn" id="diceBtn" type="button" aria-label="Nome squadra casuale">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor"/></svg>
+            </button>
+          </div>
+          <div class="lang-toggle" id="langToggle">
+            <button type="button" data-lang="it" class="on">IT</button>
+            <button type="button" data-lang="en">EN</button>
+          </div>
         </div>
 
         <div class="solved-wrap" id="solvedWrap">
@@ -937,6 +965,451 @@ document.querySelectorAll('.solved-btn').forEach(btn=>{
 
 const teamInput = document.getElementById('teamInput');
 teamInput.addEventListener('input', e=>{ state.team = e.target.value; });
+
+/* ---------------------------------------------------------
+   RANDOM TEAM NAMES — one simple title, themed per adventure, IT / EN.
+   A name is "burned" only when the team confirms it by tapping
+   "Seleziona foto": from then on it never comes out again.
+--------------------------------------------------------- */
+const NAMES = {
+  _g:{
+    it:['I Sorridenti','I Mostruosi','I Leggendari','Gli Invincibili','I Velocissimi','I Coraggiosi','I Pazzi','I Fortunati','Gli Imbattibili','Gli Scatenati','Gli Intrepidi','Gli Audaci','Gli Scoppiettanti','Gli Spericolati','Gli Inarrestabili','I Furbacchioni','I Campioni','I Fenomeni','I Giganti','I Turbo','Le Aquile','Le Tigri','Le Volpi','Le Comete','Le Scintille','I Draghi','I Lupi','I Falchi','Gli Orsi','I Leoni','I Rinoceronti','I Pinguini','I Panda','Le Pantere','I Delfini','Gli Squali','I Ghepardi','I Coyote','I Cobra','I Razzi'],
+    en:['The Smilers','The Monsters','The Legends','The Unbeatables','The Speedsters','The Brave Ones','The Crazies','The Lucky Ones','The Daredevils','The Wildcards','The Champions','The Giants','The Turbos','The Fireballs','The Comets','The Sparks','The Eagles','The Tigers','The Foxes','The Dragons','The Wolves','The Falcons','The Bears','The Lions','The Rhinos','The Penguins','The Pandas','The Panthers','The Dolphins','The Sharks','The Cheetahs','The Cobras','The Rockets','The Hotshots','The Rascals','The Mavericks','The Rebels','The Thunderbolts','The Dynamos','The Heroes']
+  },
+  crime:{
+    it:['I Detective','Gli Investigatori','I Segugi','Gli Ispettori','Le Impronte','Gli Agenti','Le Lenti','I Commissari','Le Prove','I Testimoni','Gli Intoccabili','I Sospettati','Gli Infiltrati','Gli Indizi','Le Manette','I Complici','Gli Alibi','I Misteriosi','I Segreti','Gli Infallibili','I Sotto Copertura','Il Distretto 9','Caso Chiuso','Indizio Finale','Prova Regina','Squadra Omicidi','Gli Scaltri','I Notturni','I Pedinatori','I Sherlock','I Poirot','Il Quinto Indizio','Le Ombre del Caso','Gli Implacabili'],
+    en:['The Detectives','The Sleuths','The Inspectors','The Fingerprints','The Agents','The Witnesses','The Clues','The Magnifiers','The Snoops','The Untouchables','The Suspects','The Undercovers','The Alibis','The Handcuffs','The Accomplices','The Shadows','The Mystery Crew','Case Closed','Cold Case Crew','Final Clue','Precinct Nine','Smoking Gun','The Sherlocks','The Watchers','The Night Owls','The Stakeout','The Evidence','The Mastermind','The Cipher Squad','The Insiders','The Relentless','The Hunches','The Tail Team','The Usual Suspects','The Bloodhounds']
+  },
+  hero:{
+    it:['I Supereroi','Gli Eroi','I Vendicatori','I Guardiani','Le Eroine','I Fulmini','I Difensori','Le Saette','I Giustizieri','I Campioni','Lega dei Giusti','Forza Cosmica','Gli Invincibili','Super Squadra','Fulmine e Tuono','Missione Eroi','I Mascherati','I Cosmici','Gli Elettrici','I Titani','I Super Veloci','I Super Forti','I Mantelli','Gli Scudi','Gli Extraterrestri','I Potenti','I Leggendari','Gli Atomici','I Salvamondo','Capitan Squadra','I Cavalieri','I Raggi','La Squadra Tuono','La Squadra Eroica'],
+    en:['The Superheroes','The Avengers','The Guardians','The Defenders','The Champions','The Sidekicks','The Titans','The Vigilantes','Justice Squad','Hero League','Cosmic Force','The Invincibles','Super Team','Thunder & Lightning','Mission Heroes','Power Pack','The Masked Ones','The Capes','The Shields','The Lightning','The Atomics','The Rescuers','Captain Team','The Knights','The Rays','The Thunder Team','The Mighty Ones','The Protectors','The Powerhouse','The Streaks','The Starfighters','The Saviors','The Heroic Crew','The Supers','The Legends']
+  },
+  alice:{
+    it:['I Cappellai','Le Regine','I Conigli','Gli Stregatti','Le Teiere','Le Carte','I Ghiri','Gli Orologi','Le Rose','I Bruchi','Il Cappellaio Matto','Giù nella Tana','Il Tè delle Cinque','Tutti Pazzi Qui','Il Bianconiglio','Sono in Ritardo!','Teste di Cuori','Il Gatto Sorride','I Matti','I Bizzarri','I Curiosi','I Sognatori','Le Tazzine','Gli Scacchi','I Fenicotteri','Le Margherite','I Giganti','I Piccolissimi','Il Paese Strano','Gli Specchi','Le Chiavi','I Funghi','Le Farfalle','La Regina di Cuori','Gli Enigmi'],
+    en:['The Mad Hatters','The Queens','The White Rabbits','The Cheshire Cats','The Teapots','The Playing Cards','The Dormice','The Pocket Watches','The Roses','The Caterpillars','Mad Tea Party','Down the Hole','Off With Heads','Late Late Late','The Grinning Cats','We Are All Mad','Queen of Hearts','Tea Time Team','The Curious Ones','The Dreamers','The Teacups','The Chessmen','The Flamingos','The Daisies','The Giants','The Tiny Ones','The Looking Glass','The Keys','The Mushrooms','The Butterflies','The Riddles','The Wonderlanders','The Oddballs','The Hatters','The Madcaps']
+  },
+  magic:{
+    it:['I Maghi','Le Streghe','Gli Apprendisti','Le Bacchette','I Draghi','Le Pozioni','Gli Incantatori','Le Fenici','I Gufi','Gli Stregoni','Accademia Arcana','Gli Incantesimi','Pozione Magica','Il Torneo Magico','Bacchette Unite','La Gilda Magica','Abracadabra!','I Magici','Gli Incantati','I Sapienti','Le Scope Volanti','I Grimori','Le Rune','I Cristalli','Gli Alchimisti','I Folletti','Le Fate','I Maghetti','Gli Unicorni','I Sortilegi','I Mantelli Magici','Le Sfere Magiche','Gli Arcani','Le Stelle Magiche','I Gufi Postini'],
+    en:['The Wizards','The Witches','The Apprentices','The Wands','The Dragons','The Potions','The Sorcerers','The Phoenixes','The Owls','The Spellcasters','Arcane Academy','Spell Casters','Magic Potion','Wand Squad','The Guild','Abracadabra!','House of Magic','The Enchanted','The Sages','The Flying Brooms','The Grimoires','The Runes','The Crystals','The Alchemists','The Pixies','The Fairies','The Unicorns','The Charms','The Cloaks','The Orbs','The Mystics','The Magicians','The Sparkles','The Owl Post','The Conjurers']
+  },
+  ublackout:{
+    it:['Le Torce','Le Ombre','I Fuggitivi','Gli Esploratori','I Gatti Neri','Le Lanterne','I Guardiani','Le Scintille','I Lampi','Gli Evasi','Luci Spente','Nel Buio Totale','Torce Accese','Notte Senza Luce','Fuori Servizio','Corto Circuito','Squadra Blackout','Ultima Torcia','I Notturni','I Silenziosi','Gli Invisibili','I Furtivi','Le Lampadine','I Fusibili','I Pipistrelli','Le Candele','I Gufi di Notte','Gli Elettrici','I Cercatori di Luce','Le Prese Staccate','I Fari','La Città al Buio','I Passi Silenziosi','Le Lucciole','I Battiti del Buio'],
+    en:['The Flashlights','The Shadows','The Runaways','The Explorers','The Black Cats','The Lanterns','The Guardians','The Sparks','The Escapees','The Night Owls','Lights Out','In the Dark','Torch Bearers','No Power Crew','Short Circuit','Black Out Crew','Last Flashlight','City Sleepers','The Silent Ones','The Invisibles','The Sneaks','The Lightbulbs','The Fuses','The Bats','The Candles','The Fireflies','The Light Seekers','The Beacons','The Dark City','The Quiet Steps','The Glow Team','The Power Cut','The Midnighters','The Nightwalkers','The Blackout Kids']
+  },
+  umind:{
+    it:['Gli Agenti','Le Spie','I Codici','Le Menti','Gli Infiltrati','I Cifrari','Le Ombre','I Radar','Le Missioni','Missione Mindfall','Agenti Segreti','Codice Rosso','Mente Brillante','Segretissimi','Operazione Genio','Agente Zero','I Segreti','I Digitali','I Geniali','Gli Invisibili','I Cifrati','Gli Astuti','Gli Operativi','I Doppiogiochisti','Le Talpe','I Satelliti','I Microfoni','I Mimetici','Gli 007','Il Team Zero','I Decifratori','I Super Cervelli','Gli Analisti'],
+    en:['The Agents','The Spies','The Codes','The Minds','The Infiltrators','The Ciphers','The Shadows','The Hackers','The Radars','The Missions','Mission Mindfall','Secret Agents','Code Red','Brilliant Minds','Top Secret','Operation Genius','Agent Zero','The Secrets','The Digitals','The Geniuses','The Invisibles','The Coded Ones','The Operatives','The Double Agents','The Moles','The Satellites','The Microphones','The Camouflaged','The 007s','Team Zero','The Decoders','The Brainiacs','The Analysts','The Spy Kids','The Mindfall Crew']
+  },
+  utreasure:{
+    it:['I Pirati','I Corsari','Le Bussole','Gli Esploratori','I Tesori','Le Mappe','I Capitani','Le Sirene','I Pappagalli','Gli Avventurieri','La Mappa del Tesoro','Il Forziere d\'Oro','X Segna il Punto','Pirati del Sole','Bussola Magica','Ricerca dell\'Oro','Ciurma Fortunata','Dobloni d\'Oro','I Dorati','Gli Intrepidi','I Fortunati','Gli Spavaldi','I Lupi di Mare','Le Ancore','Gli Scrigni','I Bucanieri','Le Gemme','I Cercatori d\'Oro','I Mozzi','Le Vele Nere','Il Galeone','Le Monete d\'Oro','I Sette Mari','I Naviganti','I Cannoni'],
+    en:['The Pirates','The Buccaneers','The Compasses','The Explorers','The Treasures','The Maps','The Captains','The Mermaids','The Parrots','The Adventurers','Treasure Map Crew','Golden Chest','X Marks the Spot','Pirates of Sun','Magic Compass','Gold Seekers','Lucky Crew','Golden Doubloons','The Golden Ones','The Fearless','The Daring','The Sea Wolves','The Anchors','The Chests','The Gems','The Gold Diggers','The Cabin Boys','The Black Sails','The Galleon','The Gold Coins','The Seven Seas','The Sailors','The Cannons','The Swashbucklers','The Deckhands']
+  },
+  zmoon:{
+    it:['Gli Astronauti','I Sopravvissuti','Le Lune','I Cacciatori','Gli Alieni','Le Navicelle','I Razzi','Le Stelle','I Lunatici','Gli Eroi','Zombie sulla Luna','Luna Piena','Gli Ultimi Umani','Missione Luna','Base Lunare 7','Astronauti Zombie','I Lunari','Gli Spaziali','I Cosmici','Gli Anti-Zombie','I Meteoriti','I Crateri','Gli Scafandri','I Pionieri','Gravità Zero','I Marziani','Le Orbite','I Satelliti','I Terrestri','I Camminatori Lunari','Gli Ultimi Terrestri','Le Eclissi','Le Comete Lunari','Il Lato Oscuro'],
+    en:['The Astronauts','The Survivors','The Moons','The Hunters','The Aliens','The Rockets','The Stars','The Lunatics','The Heroes','The Moonwalkers','Zombies on the Moon','Full Moon','Last Humans','Mission Moon','Moon Base 7','Zombie Hunters','The Lunars','The Spacemen','The Cosmics','The Anti-Zombies','The Meteors','The Craters','The Spacesuits','The Pioneers','Zero Gravity','The Martians','The Orbits','The Satellites','The Earthlings','The Eclipses','The Dark Side','Moon Squad','The Lunar Crew','The Launchpad','The Last Earthlings']
+  },
+  zfactory:{
+    it:['Gli Operai','I Sopravvissuti','I Cacciatori','Gli Ingranaggi','Le Tute Gialle','Gli Immuni','I Meccanici','I Guardiani','Gli Scienziati','Fabbrica Zombie','Zona Quarantena','Turno di Notte','Gli Ultimi Operai','Fuga dalla Fabbrica','Zona 4','Squadra Antidoto','Gli Arrugginiti','I Resistenti','Gli Industriali','Gli Anti-Zombie','I Caschi Gialli','Le Catene','I Bulloni','Le Ciminiere','I Magazzinieri','Gli Elettricisti','Le Valvole','I Carrelli','Le Sirene d\'Allarme','Gli Antidoti','I Saldatori','Il Reparto 7','Gli Evasi dal Turno','Le Chiavi Inglesi','I Muletti'],
+    en:['The Workers','The Survivors','The Hunters','The Gears','The Hazmat Suits','The Immune','The Mechanics','The Guardians','The Scientists','Zombie Factory','Quarantine Zone','Night Shift','Last Workers','Factory Escape','Zone 4','Antidote Squad','The Rusty Ones','The Resistant','The Industrials','The Anti-Zombies','The Hard Hats','The Chains','The Bolts','The Smokestacks','The Warehouse Crew','The Electricians','The Valves','The Forklifts','The Sirens','The Antidotes','The Welders','Section 7','The Shift Escapees','The Wrenches','The Engineers']
+  }
+};
+
+/* ---- building blocks for the two-word names and the numbered ones ----
+   IT nouns: [article + plural noun, gender]; IT adjectives: [masc, fem]
+   EN nouns are bare plurals, adjectives are invariant ("The" is added at random) ---- */
+const FUN_S = {
+  it:['I Cuccioli','I Biscotti','Le Pantofole','I Panini','I Calzini','Le Patatine','I Maialini','I Pigiami','Le Zucchine','I Bradipi','Le Ciabatte','I Polpettoni','I Gelati','Le Banane','I Gattini','I Pulcini','Le Papere','I Fagioli','Le Meringhe','I Tortellini','I Cornetti','Gli Gnocchi','I Brontoloni','I Pasticcioni','Le Frittelle'],
+  en:['The Cuddlers','The Biscuits','The Slippers','The Sandwiches','The Socks','The Chips','The Piglets','The Pajamas','The Zucchinis','The Sloths','The Flip-Flops','The Meatballs','The Ice Creams','The Bananas','The Kittens','The Chicks','The Ducklings','The Noodles','The Meringues','The Pickles','The Muffins','The Dumplings','The Donuts','The Waffles','The Goofballs']
+};
+const DB = {
+  _fun:{
+    it:{ n:[['I Panda','m'],['I Bradipi','m'],['I Pinguini','m'],['I Polpi','m'],['Le Papere','f'],['I Gattini','m'],['I Cagnolini','m'],['I Pulcini','m'],['I Maialini','m'],['I Koala','m']],
+         a:[['Ninja','Ninja'],['Volanti','Volanti'],['Scatenati','Scatenate'],['Supersonici','Supersoniche'],['Assonnati','Assonnate'],['Pazzerelli','Pazzerelle'],['Sorridenti','Sorridenti'],['Affamati','Affamate'],['Turbo','Turbo'],['Fantastici','Fantastiche']] },
+    en:{ n:['Pandas','Sloths','Penguins','Octopuses','Ducks','Kittens','Puppies','Chicks','Piglets','Koalas'],
+         a:['Ninja','Flying','Wild','Supersonic','Sleepy','Crazy','Smiling','Hungry','Turbo','Fantastic'] }
+  },
+  _g:{
+    it:{ n:[['I Lupi','m'],['Le Aquile','f'],['Le Tigri','f'],['Le Volpi','f'],['I Draghi','m'],['I Falchi','m'],['Gli Orsi','m'],['I Leoni','m'],['Le Pantere','f'],['Gli Squali','m'],['I Cobra','m'],['I Razzi','m']],
+         a:[['Veloci','Veloci'],['Coraggiosi','Coraggiose'],['Astuti','Astute'],['Forti','Forti'],['Audaci','Audaci'],['Rossi','Rosse'],['Neri','Nere'],['Dorati','Dorate'],['Scatenati','Scatenate'],['Mostruosi','Mostruose'],['Sorridenti','Sorridenti']] },
+    en:{ n:['Wolves','Eagles','Tigers','Foxes','Dragons','Falcons','Bears','Lions','Panthers','Sharks','Cobras','Rockets'],
+         a:['Swift','Brave','Clever','Mighty','Bold','Red','Black','Golden','Wild','Smiling','Monstrous'] }
+  },
+  crime:{
+    it:{ n:[['I Detective','m'],['Gli Investigatori','m'],['I Segugi','m'],['Gli Ispettori','m'],['Le Impronte','f'],['Gli Agenti','m'],['I Commissari','m'],['Le Prove','f']],
+         a:[['Misteriosi','Misteriose'],['Astuti','Astute'],['Segreti','Segrete'],['Infallibili','Infallibili'],['Notturni','Notturne'],['Scaltri','Scaltre']] },
+    en:{ n:['Detectives','Investigators','Sleuths','Inspectors','Fingerprints','Agents','Witnesses','Clues'],
+         a:['Sharp','Secret','Mysterious','Midnight','Sneaky','Undercover'] }
+  },
+  hero:{
+    it:{ n:[['I Supereroi','m'],['Gli Eroi','m'],['I Vendicatori','m'],['I Guardiani','m'],['Le Eroine','f'],['I Fulmini','m'],['I Difensori','m'],['Le Saette','f']],
+         a:[['Cosmici','Cosmiche'],['Invincibili','Invincibili'],['Potenti','Potenti'],['Mascherati','Mascherate'],['Veloci','Veloci'],['Elettrici','Elettriche']] },
+    en:{ n:['Superheroes','Heroes','Avengers','Guardians','Defenders','Champions','Sidekicks','Lightning'],
+         a:['Cosmic','Invincible','Mighty','Masked','Speedy','Electric'] }
+  },
+  alice:{
+    it:{ n:[['I Cappellai','m'],['Le Regine','f'],['I Conigli','m'],['Gli Stregatti','m'],['Le Teiere','f'],['Le Carte','f'],['I Ghiri','m'],['Gli Orologi','m']],
+         a:[['Matti','Matte'],['Bizzarri','Bizzarre'],['Curiosi','Curiose'],['Sorridenti','Sorridenti'],['Rossi','Rosse'],['Giganti','Giganti']] },
+    en:{ n:['Mad Hatters','Queens','White Rabbits','Cheshire Cats','Teapots','Playing Cards','Dormice','Pocket Watches'],
+         a:['Mad','Curious','Late','Grinning','Tiny','Giant'] }
+  },
+  magic:{
+    it:{ n:[['I Maghi','m'],['Le Streghe','f'],['Gli Apprendisti','m'],['Le Bacchette','f'],['I Draghi','m'],['Le Pozioni','f'],['Gli Incantatori','m'],['Le Fenici','f']],
+         a:[['Incantati','Incantate'],['Magici','Magiche'],['Misteriosi','Misteriose'],['Leggendari','Leggendarie'],['Arcani','Arcane'],['Scintillanti','Scintillanti']] },
+    en:{ n:['Wizards','Witches','Apprentices','Wands','Dragons','Potions','Sorcerers','Phoenixes'],
+         a:['Enchanted','Magic','Mystic','Legendary','Arcane','Sparkling'] }
+  },
+  ublackout:{
+    it:{ n:[['Le Torce','f'],['Le Ombre','f'],['I Fuggitivi','m'],['Gli Esploratori','m'],['I Gatti','m'],['Le Lanterne','f'],['Le Scintille','f'],['Gli Evasi','m']],
+         a:[['Notturni','Notturne'],['Silenziosi','Silenziose'],['Accesi','Accese'],['Furtivi','Furtive'],['Elettrici','Elettriche'],['Invisibili','Invisibili']] },
+    en:{ n:['Flashlights','Shadows','Runaways','Explorers','Black Cats','Lanterns','Sparks','Escapees'],
+         a:['Silent','Midnight','Glowing','Sneaky','Electric','Invisible'] }
+  },
+  umind:{
+    it:{ n:[['Gli Agenti','m'],['Le Spie','f'],['I Codici','m'],['Le Menti','f'],['Gli Infiltrati','m'],['I Cifrari','m'],['m'],['Le Missioni','f']],
+         a:[['Segreti','Segrete'],['Digitali','Digitali'],['Geniali','Geniali'],['Invisibili','Invisibili'],['Cifrati','Cifrate'],['Astuti','Astute']] },
+    en:{ n:['Agents','Spies','Codes','Minds','Infiltrators','Ciphers','Hackers','Missions'],
+         a:['Secret','Digital','Genius','Invisible','Coded','Sharp'] }
+  },
+  utreasure:{
+    it:{ n:[['I Pirati','m'],['I Corsari','m'],['Le Bussole','f'],['Gli Esploratori','m'],['I Tesori','m'],['Le Mappe','f'],['I Capitani','m'],['Le Sirene','f']],
+         a:[['Dorati','Dorate'],['Coraggiosi','Coraggiose'],['Intrepidi','Intrepide'],['Fortunati','Fortunate'],['Leggendari','Leggendarie'],['Spavaldi','Spavalde']] },
+    en:{ n:['Pirates','Buccaneers','Compasses','Explorers','Treasures','Maps','Captains','Mermaids'],
+         a:['Golden','Brave','Fearless','Lucky','Legendary','Daring'] }
+  },
+  zmoon:{
+    it:{ n:[['Gli Astronauti','m'],['I Sopravvissuti','m'],['Le Lune','f'],['I Cacciatori','m'],['Gli Alieni','m'],['Le Navicelle','f'],['I Razzi','m'],['Le Stelle','f']],
+         a:[['Lunari','Lunari'],['Spaziali','Spaziali'],['Coraggiosi','Coraggiose'],['Notturni','Notturne'],['Cosmici','Cosmiche'],['Anti-Zombie','Anti-Zombie']] },
+    en:{ n:['Astronauts','Survivors','Moons','Hunters','Aliens','Rockets','Stars','Moonwalkers'],
+         a:['Lunar','Space','Brave','Cosmic','Midnight','Anti-Zombie'] }
+  },
+  zfactory:{
+    it:{ n:[['Gli Operai','m'],['I Sopravvissuti','m'],['I Cacciatori','m'],['Gli Ingranaggi','m'],['Le Tute','f'],['I Meccanici','m'],['I Guardiani','m'],['Gli Scienziati','m']],
+         a:[['Arrugginiti','Arrugginite'],['Resistenti','Resistenti'],['Notturni','Notturne'],['Coraggiosi','Coraggiose'],['Industriali','Industriali'],['Anti-Zombie','Anti-Zombie']] },
+    en:{ n:['Workers','Survivors','Hunters','Gears','Hazmat Suits','Mechanics','Guardians','Scientists'],
+         a:['Rusty','Immune','Midnight','Brave','Industrial','Anti-Zombie'] }
+  }
+};
+
+/* numbered names: {n} is replaced with a random number */
+const NUM_VALUES = ['3','5','7','8','9','10','11','13','21','24','42','77','99','100','101','404','007','1000'];
+const NUM = {
+  _g:{ it:['Squadra {n}','Banda {n}','Gruppo {n}','Gli Ultimi {n}','I {n} Fenomeni','Operazione {n}','Pattuglia {n}'],
+       en:['Team {n}','Squad {n}','Group {n}','The Last {n}','The {n} Wonders','Operation {n}','Patrol {n}'] },
+  crime:{ it:['Distretto {n}','Caso {n}','Agenti {n}','Indizio {n}'], en:['Precinct {n}','Case {n}','Agents {n}','Clue {n}'] },
+  hero:{ it:['Super {n}','Eroi {n}','Lega {n}','Fulmine {n}'], en:['Super {n}','Heroes {n}','League {n}','Bolt {n}'] },
+  alice:{ it:['Cappellai {n}','Carte {n}','Conigli {n}','Il Tè delle {n}'], en:['Hatters {n}','Cards {n}','Rabbits {n}','Tea for {n}'] },
+  magic:{ it:['Maghi {n}','Incantesimo {n}','Bacchette {n}','Pozione {n}'], en:['Wizards {n}','Spell {n}','Wands {n}','Potion {n}'] },
+  ublackout:{ it:['Torce {n}','Ombre {n}','Buio {n}','Piano {n}'], en:['Torches {n}','Shadows {n}','Blackout {n}','Floor {n}'] },
+  umind:{ it:['Agente {n}','Codice {n}','Missione {n}','Operativi {n}'], en:['Agent {n}','Code {n}','Mission {n}','Operatives {n}'] },
+  utreasure:{ it:['Pirati {n}','Isola {n}','Dobloni {n}','Mappa {n}'], en:['Pirates {n}','Island {n}','Doubloons {n}','Map {n}'] },
+  zmoon:{ it:['Luna {n}','Base {n}','Astronauti {n}','Missione Luna {n}'], en:['Moon {n}','Base {n}','Astronauts {n}','Moon Mission {n}'] },
+  zfactory:{ it:['Zona {n}','Turno {n}','Reparto {n}','Operai {n}'], en:['Zone {n}','Shift {n}','Section {n}','Workers {n}'] }
+};
+
+/* pop-culture references: comics, anime, cartoons (Disney and not), films — one simple name each */
+const POP = {
+  _g:{it:['I Minions','Gli Incredibili','I Puffi','I Simpson','I Flintstones','I Barbapapà','Le Winx','Le Superchicche','I Looney Tunes','Gli Aristogatti','I Sette Nani','Le Tartarughe Ninja','I Power Rangers','I Pokémon','I Digimon','Gli Avengers','Gli X-Men','I Fantastici 4','Jumanji','Dragon Ball','One Piece','Cappelli di Paglia','I Goonies','Madagascar','L\'Era Glaciale','Kung Fu Panda','Zootropolis','Toy Story','Monsters & Co','Alla Ricerca di Nemo','Pinguini Madagascar','Gli Orsetti del Cuore','PJ Masks','Paw Patrol','Gli Animaniacs','I Muppet','I Teletubbies','Gli Antenati','I Gremlins','Pac-Man','Super Mario Bros','I Pirati di Rufy'],
+     en:['The Minions','The Incredibles','The Smurfs','The Simpsons','The Flintstones','The Winx Club','Powerpuff Girls','Looney Tunes','The Aristocats','Seven Dwarfs','Ninja Turtles','Power Rangers','The Pokémon','The Digimon','The Avengers','The X-Men','Fantastic Four','Jumanji','Dragon Ball','One Piece','Straw Hat Pirates','The Goonies','Madagascar','Ice Age','Kung Fu Panda','Zootropolis','Toy Story','Monsters Inc','Finding Nemo','Penguins of Madagascar','Care Bears','PJ Masks','Paw Patrol','The Muppets','The Teletubbies','The Gremlins','Pac-Man','Super Mario Bros','The Animaniacs']},
+  crime:{it:['La Scooby Gang','Mystery Inc','Detective Conan','Banda Bassotti','Baker Street Boys','I Cinque','La Pantera Rosa','Ocean\'s Eleven','I Bassotti','Gli Hardy Boys','Il Club dei Misteri','Lupin III','Cluedo','I Ladri Gentiluomini','Law & Order','Il Club dei Detective','I Sette Segreti','Gli Aristogatti'],
+     en:['Mystery Inc','Scooby Gang','Detective Conan','Beagle Boys','Baker Street Boys','The Famous Five','Pink Panther','Ocean\'s Eleven','The Hardy Boys','Lupin the Third','Clue','The Secret Seven','Sherlock Gnomes','Nancy Drew Club','Spy Kids']},
+  hero:{it:['Gli Avengers','Gli Incredibili','Justice League','Gli X-Men','I Fantastici 4','Power Rangers','Teen Titans','Big Hero 6','I Guardiani Galattici','My Hero Academia','Super Sayan','Le Superchicche','PJ Masks','Paw Patrol','Gli Autobot','Sky High','I Vendicatori','Gli Spy Kids','Lega dei Giusti','Cavalieri Zodiaco','Dragon Ball Z','I Thundercats'],
+     en:['The Avengers','The Incredibles','Justice League','The X-Men','Fantastic Four','Power Rangers','Teen Titans','Big Hero 6','Guardians Galaxy','My Hero Academia','Super Saiyans','Powerpuff Girls','PJ Masks','Paw Patrol','The Autobots','Sky High','Thundercats','Ninja Turtles','League of Heroes','Young Justice','Heroes of Olympus']},
+  alice:{it:['Le Principesse Disney','I Sette Nani','I Tre Porcellini','I Bimbi Sperduti','Isola che non c\'è','Paese delle Meraviglie','Il Regno di Arendelle','Il Mago di Oz','Bosco dei Cento Acri','Gli Aristogatti','Toy Story','Gli Amici di Oz','Il Regno di Frozen','La Bella e la Bestia','I Tre Moschettieri','Lilo & Stitch','Il Libro della Giungla','La Carica dei 101','Fantasia','Il Re Leone','Gli Animali del Bosco','I Tre Caballeros','Nonna Papera'],
+     en:['Disney Princesses','Seven Dwarfs','Three Little Pigs','The Lost Boys','Neverland','Wonderland','Arendelle','Land of Oz','Hundred Acre Wood','The Aristocats','Toy Story','Friends of Oz','Beauty and the Beast','Three Musketeers','Lilo & Stitch','Jungle Book','101 Dalmatians','Fantasia','The Lion King','Woodland Friends','Frozen','Tangled','Brave Hearts']},
+  magic:{it:['Hogwarts','Grifondoro','Serpeverde','Corvonero','Tassorosso','Ordine della Fenice','Esercito di Silente','Maghi di Waverly','Winx Club','Le Sailor Senshi','Tavola Rotonda','Gli Hobbit','Animali Fantastici','Il Torneo Tremaghi','I Jedi','Fairy Tail','Black Clover','Little Witch Academia','Il Club dei Maghi','Gli Elfi','Fantasia','Il Mago di Oz','Il Regno Incantato','Narnia','La Compagnia'],
+     en:['Hogwarts','Gryffindor','Slytherin','Ravenclaw','Hufflepuff','Order of the Phoenix','Dumbledore\'s Army','Wizards of Waverly','Winx Club','Sailor Scouts','Round Table','The Hobbits','Fantastic Beasts','Triwizard Tournament','The Jedi','Fairy Tail','Black Clover','Little Witch Academia','Wizard Club','The Elves','Lord of the Rings','Fantasia','Narnia','The Fellowship']},
+  ublackout:{it:['Gli Acchiappafantasmi','I Gremlins','Stranger Things','I Goonies','Notte al Museo','Halloweentown','La Famiglia Addams','Hotel Transylvania','Monsters & Co','Casa dei Fantasmi','La Scooby Gang','Cacciatori di Ombre','Gotham City','La Bat Famiglia','Zombie Kids','I Fantasmini','Il Mondo di Coraline','Nightmare Before','Gli Amici di Casper','Casper & Co','Pac-Man','Luci Spente','I Pipistrelli'],
+     en:['Ghostbusters','The Gremlins','Stranger Things','The Goonies','Night at the Museum','Halloweentown','The Addams Family','Hotel Transylvania','Monsters Inc','Haunted Mansion','The Scooby Gang','Shadow Hunters','Gotham City','The Bat Family','Ghostly Friends','Coraline','Nightmare Before','Casper & Co','Pac-Man','The Nightmare Crew','The Bat Pack']},
+  umind:{it:['Spy Kids','Mission Impossible','Men in Black','Kingsman','Totally Spies','Code Lyoko','Matrix','Agents of SHIELD','Ocean\'s Eleven','Detective Conan','Il Club delle Spie','Tintin & Co','Agenti 007','Agenti Cobra','La Banda Lupin','Squadra Phineas','Inside Out','Operazione WOOHP','Kids Next Door','Mystery Inc','Gadget & Co','Mission Mindfall'],
+     en:['Spy Kids','Mission Impossible','Men in Black','Kingsman','Totally Spies','Code Lyoko','The Matrix','Agents of SHIELD','Ocean\'s Eleven','Detective Conan','Spy Club','Tintin & Co','Agents 007','Cobra Squad','The Lupin Gang','Team Phineas','Inside Out','Operation WOOHP','Kids Next Door','Mystery Inc','Inspector Gadget']},
+  utreasure:{it:['Pirati dei Caraibi','Cappelli di Paglia','Ciurma di Rufy','I Goonies','Giocatori di Jumanji','Predatori dell\'Arca','Pianeta del Tesoro','L\'Isola del Tesoro','El Dorado','One Piece','Jumanji','Ciurma di Uncino','Pirati di Nonc\'è','Esploratori di Dora','Tomb Raiders','Cacciatori di Tesori','Sette Mari','Vascello Fantasma','I Pirati del Sole','Alla Ricerca di Nemo','Mugiwara','Atlantis','Sandokan','Pirati Barbarossa','Pirati dell\'Isola'],
+     en:['Caribbean Pirates','Straw Hat Pirates','Luffy\'s Crew','The Goonies','Jumanji Players','Lost Ark Raiders','Treasure Planet','Treasure Island','El Dorado','One Piece','Jumanji','Hook\'s Crew','Neverland Pirates','Dora\'s Explorers','Tomb Raiders','Treasure Hunters','Seven Seas','Ghost Ship Crew','Finding Nemo','Atlantis','Sandokan','Pirate Islanders','The Lost Boys','Jake\'s Pirates']},
+  zmoon:{it:['Star Wars','Star Trek','Space Jam','I Jetson','Lilo & Stitch','Space Invaders','Mars Attacks','Gli Omini Verdi','Le Sailor Senshi','UFO Robot','Gundam','Mazinga Z','Space Rangers','Galaxy Rangers','Invasori Spaziali','Gli Alieni','Guardiani Galattici','I Jedi','Toy Story','Wall-E & Eva','Moon Patrol','Sailor Moon','I Marziani','Cosmo Warriors','Big Hero 6'],
+     en:['Star Wars','Star Trek','Space Jam','The Jetsons','Lilo & Stitch','Space Invaders','Mars Attacks','Little Green Men','Sailor Scouts','Rebel Alliance','Jedi Order','Gundam Pilots','Space Rangers','Galaxy Rangers','Guardians Galaxy','Toy Story','Wall-E & Eva','Moon Patrol','Sailor Moon','The Martians','Buzz\'s Rangers','Big Hero 6']},
+  zfactory:{it:['Monsters & Co','I Minions','Super Mario Bros','Fratelli Mario','Transformers','Gli Autobot','Chicken Run','Fabbrica di Wonka','Gli Umpa Lumpa','Piante contro Zombie','Hotel Transylvania','Big Hero 6','I Flintstones','Gli Idraulici','Gli Ingranaggi','I Robot','Cars','Wall-E & Eva','Gru & Minions'],
+     en:['Monsters Inc','The Minions','Super Mario Bros','Mario Brothers','Transformers','The Autobots','Chicken Run','Wonka\'s Factory','Oompa Loompas','Plants vs Zombies','Hotel Transylvania','Big Hero 6','The Flintstones','Wreck-It Crew','The Plumbers','The Robots','Cars','Wall-E & Eva','Despicable Me']},
+};
+
+let nameLang = 'it', lastName = '';
+try{ const l = localStorage.getItem('vf-lang'); if(l==='it'||l==='en') nameLang = l; }catch(e){}
+const pickOne = a => a[Math.floor(Math.random()*a.length)];
+
+/* names already confirmed — kept across sessions so a team never gets the same one twice */
+let usedNames = new Set();
+try{ usedNames = new Set(JSON.parse(localStorage.getItem('vf-used-names') || '[]')); }catch(e){}
+function saveUsed(){ try{ localStorage.setItem('vf-used-names', JSON.stringify([...usedNames])); }catch(e){} }
+
+function namePool(themeId, lang){
+  const t = (NAMES[themeId] && NAMES[themeId][lang]) || [];
+  return [...new Set([...t, ...NAMES._g[lang]])];
+}
+
+// 1) single title: "I Sorridenti"
+function singleName(themeId, lang){
+  if(Math.random() < 0.18) return pickOne(FUN_S[lang]);
+  const themed = (NAMES[themeId] && NAMES[themeId][lang]) || [];
+  const src = (themed.length && Math.random() < 0.85) ? themed : NAMES._g[lang];
+  return pickOne(src);
+}
+// 2) noun + adjective, with Italian gender agreement: "Le Volpi Scatenate"
+function doubleName(themeId, lang){
+  const r = Math.random();
+  const key = (r < 0.6 && DB[themeId]) ? themeId : (r < 0.8 ? '_g' : '_fun');
+  const d = DB[key][lang];
+  if(lang === 'it'){
+    const [n, g] = pickOne(d.n);
+    const a = pickOne(d.a);
+    return n + ' ' + a[g === 'm' ? 0 : 1];
+  }
+  return (Math.random() < 0.5 ? 'The ' : '') + pickOne(d.a) + ' ' + pickOne(d.n);
+}
+// 3) with a number: "Distretto 9", "Team 42"
+function numberName(themeId, lang){
+  const t = (NUM[themeId] && Math.random() < 0.7) ? NUM[themeId][lang] : NUM._g[lang];
+  return pickOne(t).replace('{n}', pickOne(NUM_VALUES));
+}
+// 4) pop-culture references: groups, series, films ("I Minions", "Jumanji", "Cappelli di Paglia")
+function popName(themeId, lang){
+  const r = Math.random();
+  const own = POP[themeId] && POP[themeId][lang];
+  if(own && r < 0.55) return pickOne(own);
+  if(r < 0.85) return pickOne(POP._g[lang]);
+  // sometimes borrow from another adventure, to mix things up
+  const keys = Object.keys(POP).filter(k=>k!=='_g');
+  return pickOne(POP[pickOne(keys)][lang]);
+}
+
+/* ---------------------------------------------------------
+   MASH-UPS — cross every franchise with every other and with the
+   adventure's own words: "Star Wars" + "Spy Kids" + "Men in Black"
+   -> "Star Kids", "Spy Wars", "Star in Black", "Pirati in Black"...
+--------------------------------------------------------- */
+const MIX = {
+  en:{ pre:['Star','Super','Mega','Turbo','Hyper','Mini','Space','Dragon','Ninja','Power','Mighty','Magic','Toy','Paw','Neon','Cosmic','Spy','Mission','Jedi','Zombie','Monster','Pirate','Hero','Wonder'],
+       suf:['Kids','Wars','Squad','Academy','Rangers','Club','Gang','Force','Patrol','Jam','Story','Bros','Quest','Legends','Island','Trek','Team','Crew','Pals','Heroes'],
+       fr:['Minions','Ninja','Jedi','Pokémon','Goonies','Jumanji','Looney','Avengers','Hogwarts','Transylvania','Simpson','Smurfs','Mario'],
+       black:'in Black', mission:['Mission','Operation'] },
+  // Italian mode: only Italian words
+  it:{ pre:['Super','Mega','Turbo','Iper','Ultra','Mini','Cosmo','Dino','Fanta','Magi','Spazio','Aqua'],
+       suf:['Banda','Lega','Brigata','Pattuglia','Accademia','Legione','Armata','Ciurma','Avventura','Missione','Squadra','Forza'],
+       fr:['Ninja','Dinosauri','Puffi','Barbapapà','Simpson','Minions','Pokémon','Robot','Draghi','Fantasmi'],
+       black:'in Nero', mission:['Missione','Operazione'] }
+};
+const STOP_HEAD = new Set(['di','dei','del','della','dell','in','e','il','la','lo','of','the','and','&','vs','contro','alla','al']);
+const stripArt = t => t.replace(/^L'\s*/,'').replace(/^(I|Gli|Le|Il|Lo|La|The)\s+/,'');
+function singularEn(w){
+  if(/ies$/.test(w)) return w.slice(0,-3)+'y';
+  if(/(sses|xes|ches|shes)$/.test(w)) return w.slice(0,-2);
+  if(/s$/.test(w) && !/ss$/.test(w)) return w.slice(0,-1);
+  return w;
+}
+// head/tail halves of every franchise name, from all adventures
+let _halves = {};
+function halvesFor(lang){
+  if(_halves[lang]) return _halves[lang];
+  const langs = [lang];
+  const enSet = new Set(); Object.keys(POP).forEach(k=> (POP[k].en||[]).forEach(e=> enSet.add(stripArt(e).toLowerCase())));
+  const heads = [], tails = [], seen = new Set();
+  Object.keys(POP).forEach(k=> (lang === 'it' ? [] : langs).forEach(l=> (POP[k][l]||[]).forEach(e=>{
+    if(e.includes('&') || seen.has(e)) return; seen.add(e);
+    if(lang === 'it' && enSet.has(stripArt(e).toLowerCase())) return;   // Italian mode: no English titles
+    const w = stripArt(e).split(/\s+/);
+    if(w.length < 2 || w.length > 3) return;
+    const h = w[0], t = w.slice(1).join(' ');
+    if(STOP_HEAD.has(h.toLowerCase()) || h.length < 3 || /['\d]/.test(h) || /\d/.test(t)) return;
+    if(/^(of|dei|del|della|dell|di|e|and|vs|contro|dello|degli|delle|alla|al|the)\b/i.test(t)) return;
+    if(/^(Seven|Three|Sette|Tre|Little|Lost|Care|Straw|Disney)$/.test(h)) return;
+    heads.push(h); tails.push(t);
+  })));
+  if(lang === 'it'){ heads.push('Super','Mega','Iper','Cosmo','Dino','Ultra','Fanta','Magi'); tails.push('Banda','Lega','Brigata','Pattuglia','Accademia','Legione','Armata','Ciurma','Avventura','Missione','Rosa','Nero','Spaziale','Magica','Segreta'); }
+  return (_halves[lang] = {heads, tails});
+}
+function themeNounRaw(themeId, lang){
+  const r = Math.random();
+  let key = themeId;
+  if(!DB[key] || r > 0.85) key = '_g';      // mostly the adventure's own words, sometimes friendly animals
+  const raw = pickOne(DB[key][lang].n);
+  return Array.isArray(raw) ? raw : [raw, 'm'];      // [text with article, gender]
+}
+function themeNoun(themeId, lang){ return stripArt(themeNounRaw(themeId, lang)[0]); }
+// crossing two franchises: "Star" (Star Wars) + "Kids" (Spy Kids)
+function crossName(lang){
+  const {heads, tails} = halvesFor(lang);
+  const i = Math.floor(Math.random()*heads.length);
+  let j = Math.floor(Math.random()*tails.length);
+  if(j === i) j = (j + 1 + Math.floor(Math.random()*(tails.length-1))) % tails.length;
+  return heads[i] + ' ' + tails[j];
+}
+function mashItalian(themeId){
+  const [txt, g] = themeNounRaw(themeId, 'it');
+  const noun = stripArt(txt);
+  const r = Math.random();
+  if(r < 0.45) return pickOne(['Super','Mega','Iper','Mini','Ultra']) + ' ' + noun;          // "Super Pirati"
+  const di = g === 'f' ? 'delle' : (itArt(noun) === 'Gli' ? 'degli' : 'dei');
+  return pickOne(['Lega','Banda','Brigata','Squadra','Ciurma']) + ' ' + di + ' ' + noun;       // "Lega dei Maghi"
+}
+function mashName(themeId, lang){
+  if(lang === 'it') return mashItalian(themeId);
+  const X = MIX[lang];
+  const noun = themeNoun(themeId, lang);
+  const sing = lang === 'en' ? singularEn(noun) : noun;
+  const r = Math.random();
+  if(r < 0.30) return crossName(lang);
+  if(r < 0.42) return pickOne(X.pre) + ' ' + pickOne(X.suf);
+  if(r < 0.54) return (Math.random()<0.5 ? pickOne(X.pre) : noun) + ' ' + X.black;
+  if(r < 0.66) return lang === 'en' ? sing + ' ' + pickOne(X.suf) : pickOne(X.suf) + ' ' + noun;
+  if(r < 0.76) return pickOne(X.pre) + ' ' + noun;
+  if(r < 0.86) return pickOne(X.fr) + ' ' + noun;
+  if(r < 0.94) return noun + ' ' + pickOne(X.fr);
+  return pickOne(X.mission) + ' ' + noun;
+}
+
+
+/* ---------------------------------------------------------
+   MEMES & WEB CULTURE — kid-friendly internet words, crossed with
+   the adventure's own words: "Noob Detective", "Pirati Sigma", "#Maghi"
+--------------------------------------------------------- */
+const BLEND_IT = ['ino','ini','zilla','tron','ito','oni','otto','ello'];
+const BLEND_EN = ['zilla','tron','bot','oid','ito','ino','ster'];
+const BAD_WORD = /sex|fuck|shit|ass|cum|fag|nig|rape|porn|nazi|kill|dead|bitch|cazz|merd|figa|troi|puttan|stron/i;
+const MEME = {
+  en:{ words:['Noob','Pro','Doge','Epic','Stonks','Viral','Boss','Nyan','Glitch','NPC','Meme'],
+       suf:['Squad','Team','Gang','Crew','Kids','Club','Army','Mode','Party','Power'],
+       one:['Noob','Doge','Stonks','Glitch','NPC','Boss','Epic','Pro','Meme','Viral','Nyan','Selfie'],
+       art:['Noob','Doge','Boss','Glitch','NPC','Pro','Selfie'],
+       s:['The Epic Fails','The Noobs','The NPCs','Team Doge','Mega Stonks','The Boomers','Game Over','Total Lag','Weak Wi-Fi','Battery 1%','Always Offline','The Streamers','The Gamers','The Influencers','Hero Mode','Level Up','Final Level','Start Button','The Pro Hackers','The Emojis','The Selfies','A Thousand Likes','Zero Lag','Meme Team','The Algorithms','Trending Now','The Lurkers'] },
+  // Italian mode: web culture, Italian words
+  it:{ adj:[['Epici','Epiche'],['Virali','Virali'],['Connessi','Connesse'],['Scollegati','Scollegate'],['Digitali','Digitali'],['Online','Online'],['Offline'],['Pixelati','Pixelate'],['Caricati','Caricate'],['Social','Social'],['Rebootati','Rebootate']],
+       suf:['Banda','Lega','Brigata','Ciurma','Squadra','Armata'],
+       one:['Epico','Virale','Social','Password','Connessi','Pixel','Streaming','Download','Upload'],
+       art:[],
+       s:['Gli Sbagliati','Gli Sbadati','Gli Epici','I Virali','Sempre Connessi','Connessione Lenta','Batteria 1%','Sempre Offline','Ultimo Livello','Tasto Start','Mille Mi Piace','Zero Ritardi','Gli Algoritmi','I Navigatori','Gli Schermi','Le Emoji','I Selfie','Gli Hashtag','Le Password','Caricamento 99%','Modalità Eroe','Fine Partita','Nuova Partita','I Pixel','Gli Utenti','Segnale Debole'] }
+};
+function memeName(themeId, lang){
+  if(lang === 'it') return doubleName(themeId, 'it');
+  const M = MEME[lang];
+  const r = Math.random();
+  if(r < 0.30) return pickOne(M.s);
+  if(lang === 'it'){
+    const [txt, g] = themeNounRaw(themeId, 'it');
+    const a = pickOne(M.adj);
+    if(r < 0.65) return txt + ' ' + a[g === 'm' ? 0 : 1];
+    if(r < 0.82) return pickOne(M.suf) + ' ' + stripArt(txt);
+    return '#' + stripArt(txt).replace(/[\s'-]+/g,'');
+  }
+  const noun = themeNoun(themeId, lang);
+  const m = pickOne(M.words);
+  if(r < 0.50) return m + ' ' + noun;
+  if(r < 0.68) return noun + ' ' + m;
+  if(r < 0.84) return m + ' ' + pickOne(M.suf);
+  return '#' + noun.replace(/[\s'-]+/g,'');
+}
+// real titles must never come out whole: collect them and reject
+const KNOWN_TITLES = new Set();
+Object.keys(POP).forEach(k=> ['it','en'].forEach(l=> (POP[k][l]||[]).forEach(e=>{
+  KNOWN_TITLES.add(e.toLowerCase()); KNOWN_TITLES.add(stripArt(e).toLowerCase());
+})));
+['Star Wars','Star Trek','Space Jam','Toy Story','Paw Patrol','Power Rangers','Spy Kids','Men in Black','Mission Impossible','Ice Age','Jurassic Park','Lion King','Dragon Ball','One Piece','Straw Hat'].forEach(t=>KNOWN_TITLES.add(t.toLowerCase()));
+const isKnownTitle = n => KNOWN_TITLES.has(n.toLowerCase()) || KNOWN_TITLES.has(stripArt(n).toLowerCase());
+
+
+/* ---------------------------------------------------------
+   ONE-WORD NAMES — meme words, blends ("Piratron", "Maghizilla") and
+   glued franchise halves ("StarKids", "SpyWars")
+--------------------------------------------------------- */
+const cap = w => w.charAt(0).toUpperCase() + w.slice(1);
+const itArt = w => /^([aeiouàèéìòù]|s[^aeiou]|z|x|ps|gn|N[PT]C)/i.test(w) ? 'Gli' : 'I';
+function memeOne(lang){
+  const M = MEME[lang];
+  const w = pickOne(M.one);
+  if(lang === 'en' && M.art.includes(w) && Math.random() < 0.45)
+    return 'The ' + w + (/(s|x|h)$/i.test(w) ? 'es' : 's');
+  return w;
+}
+function blendName(themeId, lang){
+  const noun = themeNoun(themeId, lang).split(/\s+/)[0].toLowerCase().replace(/[^a-zàèéìòù]/g,'');
+  let root = noun.slice(0, 4 + Math.floor(Math.random()*2));
+  while(root.length > 3 && /[aeiouàèéìòù]$/.test(root)) root = root.slice(0,-1);
+  const suf = pickOne(lang === 'it' ? BLEND_IT : BLEND_EN);
+  if(root.length < 4 || /[^aeiouàèéìòù]{3}$/.test(root) || root.slice(-1) === suf[0]) return memeOne(lang);
+  const w = cap(root + suf);
+  return (lang === 'it' && /(ini|oni)$/.test(suf)) ? itArt(w) + ' ' + w : w;
+}
+function glueName(lang){
+  const {heads, tails} = halvesFor(lang);
+  const h = pickOne(heads), t = pickOne(tails).split(/\s+/).pop();
+  if(/^(in|of|the|and|e|di)$/i.test(t)) return blendName('_g', lang);
+  return cap(h) + cap(t);
+}
+function oneWordName(themeId, lang){
+  if(lang === 'it') return singleName(themeId, 'it');   // Italian: real Italian titles only
+  const r = Math.random();
+  if(r < 0.38) return memeOne(lang);
+  if(r < 0.72) return blendName(themeId, lang);
+  return glueName(lang);
+}
+
+function candidateName(themeId, lang){
+  const r = Math.random();
+  if(r < 0.34) return oneWordName(themeId, lang);                         // one word: meme, blend, glued
+  if(r < 0.62) return singleName(themeId, lang);                           // one title: "I Sorridenti"
+  if(r < 0.67) return (lang === 'it' || Math.random() < 0.5) ? pickOne(FUN_S[lang]) : pickOne(MEME[lang].s);
+  if(r < 0.77) return mashName(themeId, lang);
+  if(r < 0.83) return memeName(themeId, lang);
+  if(r < 0.94) return doubleName(themeId, lang);
+  return numberName(themeId, lang);
+}
+
+function buildName(themeId, lang){
+  for(let round = 0; round < 2; round++){
+    for(let i = 0; i < 80; i++){
+      const n = candidateName(themeId, lang);
+      if(n.length <= 22 && !usedNames.has(n) && n !== lastName && !isKnownTitle(n) && !BAD_WORD.test(n)) return n;
+    }
+    // pool exhausted (very unlikely): start over
+    usedNames.clear(); saveUsed();
+  }
+  return pickOne(NAMES._g[lang]);
+}
+
+// called when the team taps "Seleziona foto": the name is final, burn it
+function confirmName(){
+  const n = (state.team || '').trim();
+  if(!n) return;
+  usedNames.add(n); saveUsed();
+  lastName = '';
+}
+
+function setLang(l){
+  nameLang = l;
+  document.querySelectorAll('#langToggle button').forEach(b=> b.classList.toggle('on', b.dataset.lang === l));
+  try{ localStorage.setItem('vf-lang', l); }catch(e){}
+}
+document.querySelectorAll('#langToggle button').forEach(b=>{
+  b.onclick = ()=>{ setLang(b.dataset.lang); rollName(); };
+});
+setLang(nameLang);
+
+const diceBtn = document.getElementById('diceBtn');
+let rolling = false;
+function rollName(){
+  if(rolling || !state.adventure) return;
+  rolling = true;
+  diceBtn.classList.add('rolling');
+  let ticks = 0;
+  const id = setInterval(()=>{
+    ticks++;
+    const n = buildName(state.adventure.id, nameLang);
+    teamInput.value = n;
+    if(ticks >= 6){
+      clearInterval(id);
+      lastName = n; state.team = n;
+      diceBtn.classList.remove('rolling');
+      rolling = false;
+    }
+  }, 55);
+}
+diceBtn.onclick = rollName;
 // iOS: make sure the field isn't hidden behind the keyboard
 teamInput.addEventListener('focus', ()=>{
   setTimeout(()=> teamInput.scrollIntoView({block:'center', behavior:'smooth'}), 280);
@@ -980,6 +1453,7 @@ const IS_NATIVE = !!(window.ReactNativeWebView && window.ReactNativeWebView.post
 function nativeSend(msg){ window.ReactNativeWebView.postMessage(JSON.stringify(msg)); }
 
 function pickPhoto(){
+  confirmName();   // tapping "Seleziona foto" confirms the team name
   if(IS_NATIVE) nativeSend({type:'pickPhoto'});
   else fileInput.click();
 }
